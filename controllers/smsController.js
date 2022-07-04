@@ -33,10 +33,11 @@ const loginNTC = callback => {
     })
     .catch(error => {
       winston.error(`login api error: ${error}`);
+      callback();
     })
 };
 
-const sendMessage = (to, message) => {
+const sendMessage = (to, message, callback = () => null) => {
   winston.info('ready to hit Send Message API');
   axios
     .post(`${constants.ntcBaseUrl}`, new URLSearchParams({
@@ -60,10 +61,14 @@ const sendMessage = (to, message) => {
       if (parseResponse['rescode'] === 0) {
         loginNTC(() => {
           sendMessage(to, message);
+          callback(null, true);
         })
+      } else {
+        callback(null, true);
       }
     })
     .catch(error => {
+      callback('Something went wrong', null);
       winston.error(`send Message api error: ${error}`);
     })
 };
@@ -112,8 +117,13 @@ module.exports.recievedSMS = async function (req, res) {
         const isMobileNoExists = await db.executeQuery(`select * from users where mobile_no = ?`, [from]);
         if (isMobileNoExists.length > 0) {
           winston.info('This Mobile No already registered with other CNIC. Please use differnt mobile no');
-          sendMessage(from, 'This Mobile No already registered with other CNIC. Please use differnt mobile no');
-          res.status(200).send({ "rescode": 1, "message": "Success" });
+          sendMessage(from, 'This Mobile No already registered with other CNIC. Please use differnt mobile no', (error, response) => {
+            if(error) {
+              res.status(200).send({ "rescode": 0, "message": "Failed" });
+            } else {
+              res.status(200).send({ "rescode": 1, "message": "Success" });
+            }
+          });
           // res.status(200).send(getResponseObject("This Mobile No already registered with other CNIC. Please use differnt mobile no.", 400, 0));
           return;
         }
@@ -123,26 +133,46 @@ module.exports.recievedSMS = async function (req, res) {
         await db.executeQuery(`insert into users (cnic, mobile_no, otp, created_date, status) values (?,?,?,?,?)`,
           [String(userCNIC), String(from), OTP, new Date(), true]);
         winston.info(`Your OTP is ${OTP}`);
-        sendMessage(from, `Your OTP is ${OTP}`);
-        res.status(200).send({ "rescode": 1, "message": "Success" });
+        sendMessage(from, `Your OTP is ${OTP}`, (error, response) => {
+          if(error) {
+            res.status(200).send({ "rescode": 0, "message": "Failed" });
+          } else {
+            res.status(200).send({ "rescode": 1, "message": "Success" });
+          }
+        });
         // res.status(200).send(getResponseObject(`Your OTP is ${OTP}`, 200, 1));
       } else if (isCnicExists.length > 0 && isCnicExists[0]['mobile_no'] !== from) {  // If CNIC exists but mobile no diff
         winston.info(`Your CNIC registered with different mobile no`);
-        sendMessage(from, 'Your CNIC registered with different mobile no');
-        res.status(200).send({ "rescode": 1, "message": "Success" });
+        sendMessage(from, 'Your CNIC registered with different mobile no', (error, response) => {
+          if(error) {
+            res.status(200).send({ "rescode": 0, "message": "Failed" });
+          } else {
+            res.status(200).send({ "rescode": 1, "message": "Success" });
+          }
+        });
         // res.status(200).send(getResponseObject("Your CNIC registered with different mobile no.", 400, 0));
       } else {  // rest of scenarios handle here
         const OTP = Math.floor(Math.random() * 100000);
         await db.executeQuery(`update users set otp = ?, status = ? where cnic = ?`, [OTP, true, String(userCNIC)]);
         winston.info(`Your OTP is ${OTP}`);
-        sendMessage(from, `Your OTP is ${OTP}`);
-        res.status(200).send({ "rescode": 1, "message": "Success" });
+        sendMessage(from, `Your OTP is ${OTP}`, (error, response) => {
+          if(error) {
+            res.status(200).send({ "rescode": 0, "message": "Failed" });
+          } else {
+            res.status(200).send({ "rescode": 1, "message": "Success" });
+          }
+        });
         // res.status(200).send(getResponseObject(`Your OTP is ${OTP}`, 200, 1));
       }
     } else {
       winston.info('Please send valid 13 digit CNIC without dashes');
-      sendMessage(from, 'Please send valid 13 digit CNIC without dashes');
-      res.status(200).send({ "rescode": 1, "message": "Success" });
+      sendMessage(from, 'Please send valid 13 digit CNIC without dashes', (error, response) => {
+        if(error) {
+          res.status(200).send({ "rescode": 0, "message": "Failed" });
+        } else {
+          res.status(200).send({ "rescode": 1, "message": "Success" });
+        }
+      });
       // res.status(400).send(getResponseObject("Please send valid 13 digit CNIC without dashes", 400, 0));
     }
   } catch (error) {
