@@ -79,11 +79,11 @@ const sendMessage = (to, message, callback = () => null) => {
 module.exports.loginNTC = (req, res) => {
   winston.info('loginNTC');
   axios
-    .post(`${constants.ntcBaseUrl}`, new URLSearchParams({
+    .post(`${constants.ntcBaseUrl}`, {
       process: constants.process,
       userid: constants.ntcUserId,
       pass: constants.ntcPass
-    }), {
+    }, {
       headers: {
         "Content-Type": "application/x-www-form-urlencoded"
       }
