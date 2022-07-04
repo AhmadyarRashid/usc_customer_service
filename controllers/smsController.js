@@ -1,9 +1,60 @@
 const jwt = require("jsonwebtoken");
+const axios = require("axios");
 const db = require("../helpers/db");
 const { getResponseObject } = require("../helpers/response");
 const constants = require("../config/constants");
 const winston = require("../config/winston");
 
+// constant variables
+let ntcToken = '';
+
+// helper functions
+const loginNTC = async (callback) => {
+  await axios
+    .post(`${constants.ntcBaseUrl}`, new URLSearchParams({
+      process: constants.process,
+      userid: constants.ntcUserId,
+      pass: constants.ntcPass
+    }))
+    .then(response => {
+      let parseResponse = response;
+      if (typeof response === "string") {
+        parseResponse = JSON.parse(response);
+      }
+      if (parseResponse['rescode'] === 1) {
+        ntcToken = parseResponse['data'];
+      }
+      callback();
+    });
+};
+
+const sendMessage = (to, message) => {
+  await axios
+    .post(`${constants.ntcBaseUrl}`, new URLSearchParams({
+      process: 'SEND_SMS',
+      userid: constants.ntcUserId,
+      token: ntcToken,
+      MSISDN: to,
+      from: constants.shortCode,
+      message,
+      dlr: 1
+    }))
+    .then(async response => {
+      let parseResponse = response;
+      if (typeof response === "string")
+        parseResponse = JSON.parse(response);
+
+      if (parseResponse['rescode'] === 1) {
+        ntcToken = parseResponse['data'];
+      } else {
+        await loginNTC(() => {
+          sendMessage(to, message);
+        })
+      }
+    })
+};
+
+// controllers
 module.exports.login = async function (req, res) {
   const { username, password } = req.body;
   try {
@@ -47,7 +98,9 @@ module.exports.recievedSMS = async function (req, res) {
 
         const isMobileNoExists = await db.executeQuery(`select * from users where mobile_no = ?`, [from]);
         if (isMobileNoExists.length > 0) {
-          res.status(200).send(getResponseObject("This Mobile No already registered with other CNIC. Please use differnt mobile no.", 400, 0));
+          await sendMessage(from, 'This Mobile No already registered with other CNIC. Please use differnt mobile no');
+          res.status(200).send({"rescode": 1, "message": "Success"});
+          // res.status(200).send(getResponseObject("This Mobile No already registered with other CNIC. Please use differnt mobile no.", 400, 0));
           return;
         }
 
@@ -55,16 +108,24 @@ module.exports.recievedSMS = async function (req, res) {
         const OTP = Math.floor(Math.random() * 100000);
         await db.executeQuery(`insert into users (cnic, mobile_no, otp, created_date, status) values (?,?,?,?,?)`,
           [String(userCNIC), String(from), OTP, new Date(), true]);
-        res.status(200).send(getResponseObject(`Your OTP is ${OTP}`, 200, 1));
+        await sendMessage(from, `Your OTP is ${OTP}`);
+        res.status(200).send({"rescode": 1, "message": "Success"});
+        // res.status(200).send(getResponseObject(`Your OTP is ${OTP}`, 200, 1));
       } else if (isCnicExists.length > 0 && isCnicExists[0]['mobile_no'] !== from) {  // If CNIC exists but mobile no diff
-        res.status(200).send(getResponseObject("Your CNIC registered with different mobile no.", 400, 0));
+        await sendMessage(from, 'Your CNIC registered with different mobile no');
+        res.status(200).send({"rescode": 1, "message": "Success"});
+        // res.status(200).send(getResponseObject("Your CNIC registered with different mobile no.", 400, 0));
       } else {  // rest of scenarios handle here
         const OTP = Math.floor(Math.random() * 100000);
         await db.executeQuery(`update users set otp = ?, status = ? where cnic = ?`, [OTP, true, String(userCNIC)]);
-        res.status(200).send(getResponseObject(`Your OTP is ${OTP}`, 200, 1));
+        await sendMessage(from, `Your OTP is ${OTP}`);
+        res.status(200).send({"rescode": 1, "message": "Success"});
+        // res.status(200).send(getResponseObject(`Your OTP is ${OTP}`, 200, 1));
       }
     } else {
-      res.status(400).send(getResponseObject("Please send valid 13 digit CNIC without dashes", 400, 0));
+      await sendMessage(from, 'Please send valid 13 digit CNIC without dashes');
+      res.status(200).send({"rescode": 1, "message": "Success"});
+      // res.status(400).send(getResponseObject("Please send valid 13 digit CNIC without dashes", 400, 0));
     }
   } catch (error) {
     winston.error(`Verify OTP:  Payload ${JSON.stringify(req.body)} and its error ${error}`);
@@ -96,7 +157,7 @@ module.exports.verifyOTP = async (req, res) => {
       res.status(200).send(getResponseObject('No Data Found against CNIC', 404, 1));
     } else {
       const { otp, mobile_no } = fetchMobileNo[0];
-      const stericMobileNo = "+92*****" + String(mobile_no).substring(7); 
+      const stericMobileNo = "+92*****" + String(mobile_no).substring(7);
       if (OTP == otp) {
         await db.executeQuery(`update users set otp = ?, status = ? where cnic = ?`, [null, false, cnic]);
         res.status(200).send(getResponseObject('OTP Verified', 200, 1));
