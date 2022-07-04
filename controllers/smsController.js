@@ -10,6 +10,7 @@ let ntcToken = '';
 
 // helper functions
 const loginNTC = callback => {
+  winston.info('ready to hit Login API');
   axios
     .post(`${constants.ntcBaseUrl}`, new URLSearchParams({
       process: constants.process,
@@ -36,6 +37,7 @@ const loginNTC = callback => {
 };
 
 const sendMessage = (to, message) => {
+  winston.info('ready to hit Send Message API');
   axios
     .post(`${constants.ntcBaseUrl}`, new URLSearchParams({
       process: 'SEND_SMS',
