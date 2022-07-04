@@ -87,6 +87,8 @@ module.exports.loginNTC = (req, res) => {
       }
     })
     .then(response => {
+      winston.info(`response : ${response}`);
+      winston.info(`response type : ${typeof response}`);
       let parseResponse = response;
       if (typeof response === "string")
         parseResponse = JSON.parse(response)
