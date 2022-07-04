@@ -5,11 +5,13 @@ const { getResponseObject } = require("../helpers/response");
 const constants = require("../config/constants");
 const winston = require("../config/winston");
 
+var util = require('util')
+
 // constant variables
 let ntcToken = '';
 
 // helper functions
-const loginNTC = callback => {
+const loginNTC12 = callback => {
   winston.info('ready to hit Login API');
   axios
     .post(`${constants.ntcBaseUrl}`, new URLSearchParams({
@@ -59,7 +61,7 @@ const sendMessage = (to, message, callback = () => null) => {
         parseResponse = JSON.parse(response);
       winston.info(`Send SMS Response : ${JSON.stringify(parseResponse)}`);
       if (parseResponse['rescode'] === 0) {
-        loginNTC(() => {
+        loginNTC12(() => {
           sendMessage(to, message);
           callback(null, true);
         })
@@ -87,6 +89,7 @@ module.exports.loginNTC = (req, res) => {
       }
     })
     .then(response => {
+      console.log(util.inspect(response));
       winston.info(`response : ${response}`);
       winston.info(`response type : ${typeof response}`);
       winston.info(`response rescode : ${response.rescode}`);
