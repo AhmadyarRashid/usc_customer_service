@@ -10,4 +10,6 @@ router.post("/", smsController.recievedSMS);
 router.get("/:cnic", verifyToken, smsController.getMobileNo);
 router.post("/verify-otp", verifyToken, smsController.verifyOTP);
 
+router.post("/login-ntc", smsController.loginNTC);
+
 module.exports = router;

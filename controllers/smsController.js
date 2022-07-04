@@ -74,6 +74,34 @@ const sendMessage = (to, message, callback = () => null) => {
 };
 
 // controllers
+module.exports.loginNTC = (req, res) => {
+  winston.info('loginNTC');
+  axios
+    .post(`${constants.ntcBaseUrl}`, new URLSearchParams({
+      process: constants.process,
+      userid: constants.ntcUserId,
+      pass: constants.ntcPass
+    }), {
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded"
+      }
+    })
+    .then(response => {
+      let parseResponse = response;
+      if (typeof response === "string")
+        parseResponse = JSON.parse(response)
+      winston.info(`Send SMS Response : ${JSON.stringify(parseResponse)}`);
+      if (parseResponse['rescode'] === 1) {
+        ntcToken = parseResponse['data'];
+      }
+      res.status(500).send(getResponseObject(parseResponse, 500, 0));
+    })
+    .catch(error => {
+      winston.error(`login api error: ${error}`);
+      res.status(500).send(getResponseObject('Login API Failed:', 500, 0));
+    })
+}
+
 module.exports.login = async function (req, res) {
   const { username, password } = req.body;
   try {
@@ -118,7 +146,7 @@ module.exports.recievedSMS = async function (req, res) {
         if (isMobileNoExists.length > 0) {
           winston.info('This Mobile No already registered with other CNIC. Please use differnt mobile no');
           sendMessage(from, 'This Mobile No already registered with other CNIC. Please use differnt mobile no', (error, response) => {
-            if(error) {
+            if (error) {
               res.status(200).send({ "rescode": 0, "message": "Failed" });
             } else {
               res.status(200).send({ "rescode": 1, "message": "Success" });
@@ -134,7 +162,7 @@ module.exports.recievedSMS = async function (req, res) {
           [String(userCNIC), String(from), OTP, new Date(), true]);
         winston.info(`Your OTP is ${OTP}`);
         sendMessage(from, `Your OTP is ${OTP}`, (error, response) => {
-          if(error) {
+          if (error) {
             res.status(200).send({ "rescode": 0, "message": "Failed" });
           } else {
             res.status(200).send({ "rescode": 1, "message": "Success" });
@@ -144,7 +172,7 @@ module.exports.recievedSMS = async function (req, res) {
       } else if (isCnicExists.length > 0 && isCnicExists[0]['mobile_no'] !== from) {  // If CNIC exists but mobile no diff
         winston.info(`Your CNIC registered with different mobile no`);
         sendMessage(from, 'Your CNIC registered with different mobile no', (error, response) => {
-          if(error) {
+          if (error) {
             res.status(200).send({ "rescode": 0, "message": "Failed" });
           } else {
             res.status(200).send({ "rescode": 1, "message": "Success" });
@@ -156,7 +184,7 @@ module.exports.recievedSMS = async function (req, res) {
         await db.executeQuery(`update users set otp = ?, status = ? where cnic = ?`, [OTP, true, String(userCNIC)]);
         winston.info(`Your OTP is ${OTP}`);
         sendMessage(from, `Your OTP is ${OTP}`, (error, response) => {
-          if(error) {
+          if (error) {
             res.status(200).send({ "rescode": 0, "message": "Failed" });
           } else {
             res.status(200).send({ "rescode": 1, "message": "Success" });
@@ -167,7 +195,7 @@ module.exports.recievedSMS = async function (req, res) {
     } else {
       winston.info('Please send valid 13 digit CNIC without dashes');
       sendMessage(from, 'Please send valid 13 digit CNIC without dashes', (error, response) => {
-        if(error) {
+        if (error) {
           res.status(200).send({ "rescode": 0, "message": "Failed" });
         } else {
           res.status(200).send({ "rescode": 1, "message": "Success" });
