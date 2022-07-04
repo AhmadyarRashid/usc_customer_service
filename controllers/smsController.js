@@ -89,10 +89,10 @@ module.exports.loginNTC = (req, res) => {
     .then(response => {
       winston.info(`response : ${response}`);
       winston.info(`response type : ${typeof response}`);
-      // if (parseResponse['rescode'] === 1) {
-      //   ntcToken = parseResponse['data'];
-      // }
-      res.status(500).send(getResponseObject(response, 200, 0));
+      if (parseResponse.rescode === 1) {
+        ntcToken = parseResponse.data || '';
+      }
+      res.status(500).send(getResponseObject('done', 200, 0));
     })
     .catch(error => {
       winston.error(`login api error: ${error}`);
