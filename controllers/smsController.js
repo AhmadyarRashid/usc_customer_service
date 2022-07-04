@@ -13,36 +13,32 @@ let ntcToken = '';
 // helper functions
 const loginNTC12 = callback => {
   winston.info('ready to hit Login API');
+
   axios
-    .post(`${constants.ntcBaseUrl}`, new URLSearchParams({
+    .post(`${constants.ntcBaseUrl}`, {
       process: constants.process,
       userid: constants.ntcUserId,
       pass: constants.ntcPass
-    }), {
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded"
-      }
     })
     .then(response => {
-      let parseResponse = response;
-      if (typeof response === "string")
-        parseResponse = JSON.parse(response)
-      winston.info(`Send SMS Response : ${JSON.stringify(parseResponse)}`);
-      if (parseResponse['rescode'] === 1) {
-        ntcToken = parseResponse['data'];
+      const apiResponse = response.data;
+      winston.info(`response rescode : ${apiResponse.rescode}`);
+      winston.info(`response data : ${apiResponse.data}`);
+      if (apiResponse.rescode === 1) {
+        ntcToken = apiResponse.data || '';
       }
       callback();
     })
     .catch(error => {
       winston.error(`login api error: ${error}`);
       callback();
-    })
+    });
 };
 
 const sendMessage = (to, message, callback = () => null) => {
   winston.info('ready to hit Send Message API');
   axios
-    .post(`${constants.ntcBaseUrl}`, new URLSearchParams({
+    .post(`${constants.ntcBaseUrl}`, {
       process: 'SEND_SMS',
       userid: constants.ntcUserId,
       token: ntcToken,
@@ -50,15 +46,9 @@ const sendMessage = (to, message, callback = () => null) => {
       from: constants.shortCode,
       message,
       dlr: 1
-    }), {
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded"
-      }
     })
     .then(async response => {
-      let parseResponse = response;
-      if (typeof response === "string")
-        parseResponse = JSON.parse(response);
+      const parseResponse = response.data;
       winston.info(`Send SMS Response : ${JSON.stringify(parseResponse)}`);
       if (parseResponse['rescode'] === 0) {
         loginNTC12(() => {
