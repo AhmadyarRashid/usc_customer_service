@@ -29,7 +29,10 @@ const loginNTC = callback => {
         ntcToken = parseResponse['data'];
       }
       callback();
-    });
+    })
+    .catch(error => {
+      winston.error(`login api error: ${error}`);
+    })
 };
 
 const sendMessage = (to, message) => {
@@ -57,6 +60,9 @@ const sendMessage = (to, message) => {
           sendMessage(to, message);
         })
       }
+    })
+    .catch(error => {
+      winston.error(`send Message api error: ${error}`);
     })
 };
 
