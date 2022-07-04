@@ -83,16 +83,9 @@ module.exports.loginNTC = (req, res) => {
       process: constants.process,
       userid: constants.ntcUserId,
       pass: constants.ntcPass
-    }, {
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded"
-      }
     })
     .then(response => {
       const apiResponse = response.data
-      console.log(util.inspect(response.data));
-      winston.info(`response : ${apiResponse}`);
-      winston.info(`response type : ${typeof apiResponse}`);
       winston.info(`response rescode : ${apiResponse.rescode}`);
       winston.info(`response data : ${apiResponse.data}`);
       if (apiResponse.rescode === 1) {
