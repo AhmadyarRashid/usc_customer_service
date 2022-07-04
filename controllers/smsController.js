@@ -87,16 +87,12 @@ module.exports.loginNTC = (req, res) => {
       }
     })
     .then(response => {
-      winston.info(`response : ${response}`);
+      winston.info(`response : ${JSON.stringify(response)}`);
       winston.info(`response type : ${typeof response}`);
-      let parseResponse = response;
-      if (typeof response === "string")
-        parseResponse = JSON.parse(response)
-      winston.info(`Send SMS Response : ${JSON.stringify(parseResponse)}`);
-      if (parseResponse['rescode'] === 1) {
-        ntcToken = parseResponse['data'];
-      }
-      res.status(500).send(getResponseObject(parseResponse, 500, 0));
+      // if (parseResponse['rescode'] === 1) {
+      //   ntcToken = parseResponse['data'];
+      // }
+      res.status(500).send(getResponseObject(response, 200, 0));
     })
     .catch(error => {
       winston.error(`login api error: ${error}`);
