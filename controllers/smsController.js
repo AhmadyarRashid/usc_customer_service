@@ -89,6 +89,8 @@ module.exports.loginNTC = (req, res) => {
     .then(response => {
       winston.info(`response : ${response}`);
       winston.info(`response type : ${typeof response}`);
+      winston.info(`response rescode : ${response.rescode}`);
+      winston.info(`response data : ${response.data}`);
       if (response.rescode === 1) {
         ntcToken = response.data || '';
       }
