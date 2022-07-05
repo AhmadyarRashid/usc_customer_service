@@ -108,7 +108,7 @@ module.exports.login = async function (req, res) {
           expiresIn: "2h",
         }
       );
-      res.status(401).send(getResponseObject("Login Successfully", 200, 1, { token, ...userPayload }));
+      res.status(200).send(getResponseObject("Login Successfully", 200, 1, { token, ...userPayload }));
     } else {
       res.status(401).send(getResponseObject("Wrong credentials", 401, 0));
     }
