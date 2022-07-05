@@ -217,7 +217,7 @@ module.exports.verifyOTP = async (req, res) => {
   try {
     const fetchMobileNo = await db.executeQuery(`select otp, mobile_no from users where cnic = ? limit 1`, [cnic]);
     if (fetchMobileNo.length < 1) {
-      res.status(200).send(getResponseObject('No Data Found against CNIC', 404, 1));
+      res.status(200).send(getResponseObject('No Data Found against CNIC', 404, 0));
     } else {
       const { otp, mobile_no } = fetchMobileNo[0];
       const stericMobileNo = "+92*****" + String(mobile_no).substring(7);
