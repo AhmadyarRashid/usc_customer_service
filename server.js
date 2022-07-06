@@ -29,6 +29,16 @@ app.use(responseHandler);
 // create default admin login if not exists
 createAdminLoginIfNotExist()
 
+app.get('/', (req, res) => {
+    console.log('get req body', req.body);
+    res.status(200).send('OK');
+});
+
+app.post('/', (req, res) => {
+    console.log('post req body', req.body);
+    res.status(200).send('OK');
+});
+
 /* registering routes */
 app.use("/api", require("./routes/index"));
 
