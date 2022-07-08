@@ -148,7 +148,7 @@ module.exports.recievedSMS = async function (req, res) {
         await db.executeQuery(`insert into users (cnic, mobile_no, otp, created_date, status) values (?,?,?,?,?)`,
           [String(userCNIC), String(from), OTP, new Date(), true]);
         winston.info(`Your OTP is ${OTP}`);
-        sendMessage(from, `${OTP} یوٹیلیٹی اسٹور پر خریداری کے لیے آپ کا کوڈ ہے۔`, (error, response) => {
+        sendMessage(from, `یوٹیلیٹی اسٹور پر خریداری کے لیے آپ کا کوڈ ہے۔ ${OTP}`, (error, response) => {
           if (error) {
             res.status(200).send({ "rescode": 0, "message": "Failed" });
           } else {
@@ -170,7 +170,7 @@ module.exports.recievedSMS = async function (req, res) {
         const OTP = Math.floor(Math.random() * 100000);
         await db.executeQuery(`update users set otp = ?, status = ? where cnic = ?`, [OTP, true, String(userCNIC)]);
         winston.info(`Your OTP is ${OTP}`);
-        sendMessage(from, `${OTP} یوٹیلیٹی اسٹور پر خریداری کے لیے آپ کا کوڈ ہے۔`, (error, response) => {
+        sendMessage(from, `یوٹیلیٹی اسٹور پر خریداری کے لیے آپ کا کوڈ ہے۔ ${OTP}`, (error, response) => {
           if (error) {
             res.status(200).send({ "rescode": 0, "message": "Failed" });
           } else {
