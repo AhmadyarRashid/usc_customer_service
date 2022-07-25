@@ -31,10 +31,10 @@ module.exports.get_user_quota = async function (req, res) {
                     res.status(200).send(getResponseObject('Fetched successfully', 200, 1, availableQuota));
                 }
             } else {
-                res.status(400).send(getResponseObject('Family Id not found', 400, 0));
+                res.status(400).send(getResponseObject('Family Id not found', 404, 0));
             }
         } else {
-            res.status(400).send(getResponseObject('CNIC not found', 400, 0));
+            res.status(400).send(getResponseObject('Please register your CNIC by send cnic number tp 5566.', 400, 0));
         }
     } catch (error) {
         console.log(error);
