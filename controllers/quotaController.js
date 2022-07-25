@@ -55,7 +55,7 @@ module.exports.update_user_quota = async (req, res) => {
                 const { family_id } = userFamilyId[0];
                 if (family_id) {
                     for (let i = 0; i < issuedItem.length; i++) {
-                        const {id, qty} = issuedItem[i];
+                        const { id, qty } = issuedItem[i];
                         await db.executeQuery(
                             `update user_quota set available_quota = available_quota - ? where family_id = ? and product_id = ?`,
                             [qty, family_id, id]
@@ -72,5 +72,23 @@ module.exports.update_user_quota = async (req, res) => {
             console.log(error);
             res.send(getResponseObject(error.message, 500, 0));
         }
+    }
+};
+
+module.exports.upate_family_id = async (req, res) => {
+    const { familyId } = req.body;
+    const { cnic } = req.params;
+
+    try {
+        const userDetail = await db.executeQuery(`select family_id from users where cnic = ?`, [cnic]);
+        if (userDetail.length < 1) {
+            res.send(getResponseObject('User not register yet. Please send your cnic number to 5566.', 400, 0));
+        } else {
+            await db.executeQuery(`update users set family_id = ? where cnic = ?`, [familyId, cnic]);
+            res.status(200).send(getResponseObject('Update successfully', 200, 1));
+        }
+    } catch (error) {
+        console.log(error);
+        res.send(getResponseObject(error.message, 500, 0));
     }
 };

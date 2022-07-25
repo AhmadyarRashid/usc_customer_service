@@ -16,4 +16,10 @@ router.post(
     quotaController.update_user_quota
 );
 
+router.post(
+    "/:cnic/familyId",
+    // verifyToken,
+    quotaController.upate_family_id
+);
+
 module.exports = router;
