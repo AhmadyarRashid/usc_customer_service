@@ -5,5 +5,27 @@ module.exports = {
     process: 'APP_LOGIN',
     ntcUserId: 'usc.ntc.sms',
     ntcPass: 'usc@ntc!@#',
-    shortCode: 5566
+    shortCode: 5566,
+    subsidyProducts: [
+        {
+            id: 0,
+            name: 'Atta',
+            quota: 5,
+        },
+        {
+            id: 1,
+            name: 'Ghee',
+            quota: 5,
+        },
+        {
+            id: 2,
+            name: 'Oil',
+            quota: 5,
+        },
+        {
+            id: 3,
+            name: 'Sugar',
+            quota: 5,
+        }
+    ]
 };

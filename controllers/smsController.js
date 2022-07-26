@@ -131,8 +131,8 @@ module.exports.recievedSMS = async function (req, res) {
       if (isCnicExists.length == 0) { // is cnic not exists
         const isMobileNoExists = await db.executeQuery(`select * from users where mobile_no = ?`, [from]);
         if (isMobileNoExists.length > 0) {
-          winston.info('This Mobile No already registered with other CNIC. Please use differnt mobile no');
-          sendMessage(from, 'This Mobile No already registered with other CNIC. Please use differnt mobile no', (error, response) => {
+          winston.info('This Mobile No already registered with other CNIC. Please use different mobile no');
+          sendMessage(from, 'This Mobile No already registered with other CNIC. Please use different mobile no', (error, response) => {
             if (error) {
               res.status(200).send({ "rescode": 0, "message": "Failed" });
             } else {
