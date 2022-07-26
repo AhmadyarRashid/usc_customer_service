@@ -7,18 +7,18 @@ const router = express.Router();
 // routes
 router.get(
     "/:cnic",
-    // verifyToken,
+    verifyToken,
     quotaController.get_user_quota
 );
 router.post(
     "/:cnic",
-    // verifyToken,
+    verifyToken,
     quotaController.update_user_quota
 );
 
 router.post(
     "/:cnic/familyId",
-    // verifyToken,
+    verifyToken,
     quotaController.upate_family_id
 );
 
