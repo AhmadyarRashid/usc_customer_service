@@ -14,8 +14,12 @@ let ntcToken = '';
 // helper functions
 const loginNTC12 = callback => {
   winston.info('ready to hit Login API');
-
-  axios
+  const instance = axios.create({
+    httpsAgent: new https.Agent({
+      rejectUnauthorized: false
+    })
+  });
+  instance
     .post(`${constants.ntcBaseUrl}`, {
       process: constants.process,
       userid: constants.ntcUserId,
