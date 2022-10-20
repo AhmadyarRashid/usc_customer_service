@@ -1,5 +1,6 @@
 const jwt = require("jsonwebtoken");
 const axios = require("axios");
+const https = require('https');
 const db = require("../helpers/db");
 const { getResponseObject } = require("../helpers/response");
 const constants = require("../config/constants");
@@ -37,7 +38,12 @@ const loginNTC12 = callback => {
 
 const sendMessage = (to, message, callback = () => null) => {
   winston.info('ready to hit Send Message API');
-  axios
+  const instance = axios.create({
+    httpsAgent: new https.Agent({
+      rejectUnauthorized: false
+    })
+  });
+  instance
     .post(`${constants.ntcBaseUrl}`, {
       process: 'SEND_SMS',
       userid: constants.ntcUserId,
