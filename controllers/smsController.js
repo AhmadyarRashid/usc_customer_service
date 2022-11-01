@@ -13,7 +13,7 @@ let ntcToken = '';
 
 // helper functions
 const loginNTC12 = callback => {
-  winston.info('ready to hit Login API');
+  winston.info('ready to hit Login API ==============');
   const instance = axios.create({
     httpsAgent: new https.Agent({
       rejectUnauthorized: false
@@ -60,10 +60,10 @@ const sendMessage = (to, message, callback = () => null) => {
     .then(async response => {
       const parseResponse = response.data;
       winston.info(`Send SMS Response : ${JSON.stringify(parseResponse)}`);
-      if (parseResponse['rescode'] === 0) {
+      if (parseResponse['rescode'] === 0 && parseResponse['message'] == 'Session expired') {
         loginNTC12(() => {
           sendMessage(to, message);
-          callback(null, true);
+          // callback(null, true);
         })
       } else {
         callback(null, true);
