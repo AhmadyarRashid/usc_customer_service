@@ -225,6 +225,7 @@ module.exports.getMobileNo = async (req, res) => {
 module.exports.verifyOTP = async (req, res) => {
   const { cnic, otp: OTP } = req.body;
   try {
+    winston.info(`Verify OTP: ${JSON.stringify(req.body)}`);
     res.status(200).send(getResponseObject('OTP Verified', 200, 1));
     return;
     const fetchMobileNo = await db.executeQuery(`select otp, mobile_no from users where cnic = ? limit 1`, [cnic]);
