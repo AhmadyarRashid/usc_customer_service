@@ -8,7 +8,7 @@ const router = express.Router();
 router.post("/login", smsController.login);
 router.post("/", smsController.recievedSMS);
 router.get("/:cnic", verifyToken, smsController.getMobileNo);
-router.post("/verify-otp", verifyToken, smsController.verifyOTP);
+router.post("/verify-otp", smsController.verifyOTP);
 
 router.post("/login-ntc", smsController.loginNTC);
 
