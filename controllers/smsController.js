@@ -10,34 +10,39 @@ var util = require('util')
 
 // constant variables
 let ntcToken = '';
+let isLocked = true;
 
 // helper functions
 const loginNTC12 = callback => {
-  winston.info('ready to hit Login API ==============');
-  const instance = axios.create({
-    httpsAgent: new https.Agent({
-      rejectUnauthorized: false
-    })
-  });
-  instance
-    .post(`${constants.ntcBaseUrl}`, {
-      process: constants.process,
-      userid: constants.ntcUserId,
-      pass: constants.ntcPass
-    })
-    .then(response => {
-      const apiResponse = response.data;
-      winston.info(`response rescode : ${apiResponse.rescode}`);
-      winston.info(`response data : ${apiResponse.data}`);
-      if (apiResponse.rescode === 1) {
-        ntcToken = apiResponse.data || '';
-      }
-      callback();
-    })
-    .catch(error => {
-      winston.error(`login api error: ${error}`);
-      callback();
+  if(isLocked) {
+    isLocked = false;
+    winston.info('======= ready to hit Login API ==============');
+    const instance = axios.create({
+      httpsAgent: new https.Agent({
+        rejectUnauthorized: false
+      })
     });
+    instance
+      .post(`${constants.ntcBaseUrl}`, {
+        process: constants.process,
+        userid: constants.ntcUserId,
+        pass: constants.ntcPass
+      })
+      .then(response => {
+        const apiResponse = response.data;
+        winston.info(`response rescode : ${apiResponse.rescode}`);
+        winston.info(`response data : ${apiResponse.data}`);
+        if (apiResponse.rescode === 1) {
+          ntcToken = apiResponse.data || '';
+          isLocked = true;
+        }
+        callback();
+      })
+      .catch(error => {
+        winston.error(`login api error: ${error}`);
+        callback();
+      });
+  }
 };
 
 const sendMessage = (to, message, callback = () => null) => {
