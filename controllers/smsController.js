@@ -9,8 +9,8 @@ const winston = require("../config/winston");
 var util = require('util')
 
 // constant variables
-let ntcToken = '';
-let isLocked = true;
+var ntcToken = '';
+var isLocked = true;
 
 // helper functions
 const loginNTC12 = callback => {
