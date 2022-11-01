@@ -56,7 +56,7 @@ const sendMessage = (to, message, callback = () => null) => {
     .post(`${constants.ntcBaseUrl}`, {
       process: 'SEND_SMS',
       userid: constants.ntcUserId,
-      token: ntcToken,
+      token: global.ntcToken,
       MSISDN: to,
       from: constants.shortCode,
       message,
@@ -66,10 +66,12 @@ const sendMessage = (to, message, callback = () => null) => {
       const parseResponse = response.data;
       winston.info(`Send SMS Response : ${JSON.stringify(parseResponse)}`);
       if (parseResponse['rescode'] === 0 && parseResponse['message'] == 'Session expired') {
-        loginNTC12(() => {
-          sendMessage(to, message);
-          // callback(null, true);
-        })
+        winston.error(`Send Message Session Expired : ${JSON.stringify(parseResponse)}`);
+        callback(null, true);
+        // loginNTC12(() => {
+        //   sendMessage(to, message);
+        //   // callback(null, true);
+        // })
       } else {
         callback(null, true);
       }

@@ -4,7 +4,9 @@ const cors = require("cors");
 const helmet = require("helmet");
 const errorHandler = require("./helpers/error-handler");
 const responseHandler = require("./middlewares/response");
+const {getNtcToken} = require("./utils/helper");
 const logger = require('./helpers/logger')('server.js');
+var CronJob = require('cron').CronJob;
 const {
     createAdminLoginIfNotExist
 } = require("./helpers/admin")
@@ -12,6 +14,7 @@ const readXlsxFile = require('read-excel-file/node')
 
 // config, helpers & middleware
 const config = require("./config/config");
+global.ntcToken = "";
 
 // db reference
 const db = require("./helpers/db");
@@ -25,6 +28,11 @@ app.use(bodyParser.urlencoded({
 app.use(bodyParser.json());
 
 app.use(responseHandler);
+
+var job = new CronJob('0 */6 * * *', function() {
+    //will run every 6 hours
+    getNtcToken();
+});
 
 // create default admin login if not exists
 createAdminLoginIfNotExist()
@@ -47,6 +55,7 @@ app.use(errorHandler);
 
 /* creating server */
 app.listen(config.server_port, () => {
-    //logger.info(`Server listening on port ${config.server_port}`);
     console.log(`Server listening on port ${config.server_port}`);
+    getNtcToken();
+    job.start();
 });
