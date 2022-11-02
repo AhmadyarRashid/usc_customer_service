@@ -4,13 +4,12 @@ const constants = require("../config/constants");
 const winston = require("../config/winston");
 
 module.exports.getNtcToken = function () {
-    console.log('enter in request =====', global.ntcToken);
+    console.log('get Token request =====', global.ntcToken);
     const instance = axios.create({
         httpsAgent: new https.Agent({
             rejectUnauthorized: false
         })
     });
-    console.log('instance =====', global.ntcToken);
     instance
         .post(`${constants.ntcBaseUrl}`, {
             process: constants.process,
@@ -18,7 +17,7 @@ module.exports.getNtcToken = function () {
             pass: constants.ntcPass
         })
         .then(response => {
-            console.log('repsonse in request ==', response);
+            console.log('repsonse login request ==', response);
             const apiResponse = response.data;
             winston.info(`response rescode : ${apiResponse.rescode}`);
             winston.info(`response data : ${apiResponse.data}`);

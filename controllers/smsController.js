@@ -46,7 +46,7 @@ const loginNTC12 = callback => {
 };
 
 const sendMessage = (to, message, callback = () => null) => {
-  winston.info('ready to hit Send Message API');
+  // winston.info('ready to hit Send Message API');
   const instance = axios.create({
     httpsAgent: new https.Agent({
       rejectUnauthorized: false
@@ -64,7 +64,7 @@ const sendMessage = (to, message, callback = () => null) => {
     })
     .then(async response => {
       const parseResponse = response.data;
-      winston.info(`Send SMS Response : ${JSON.stringify(parseResponse)}`);
+      // winston.info(`Send SMS Response : ${JSON.stringify(parseResponse)}`);
       if (parseResponse['rescode'] === 0 && parseResponse['message'] == 'Session expired') {
         winston.error(`Send Message Session Expired : ${JSON.stringify(parseResponse)}`);
         callback(null, true);
@@ -232,7 +232,7 @@ module.exports.getMobileNo = async (req, res) => {
 module.exports.verifyOTP = async (req, res) => {
   const { cnic, otp: OTP } = req.body;
   try {
-    winston.info(`Verify OTP ===== ${JSON.stringify(req.body)} and ${req.headers.authorization}`);
+    // winston.info(`Verify OTP ===== ${JSON.stringify(req.body)} and ${req.headers.authorization}`);
     res.setHeader('Content-Type', 'application/json');
     res.status(200).send(getResponseObject('OTP Verified', 200, 1));
     return;
