@@ -61,6 +61,8 @@ const sendMessage = (to, message, callback = () => null) => {
       from: constants.shortCode,
       message,
       dlr: 1
+    }, {
+      timeout: 10000
     })
     .then(async response => {
       const parseResponse = response.data;
