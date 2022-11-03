@@ -62,7 +62,7 @@ const sendMessage = (to, message, callback = () => null) => {
       message,
       dlr: 1
     }, {
-      timeout: 10000
+      timeout: 100000
     })
     .then(async response => {
       const parseResponse = response.data;
