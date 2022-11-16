@@ -12,39 +12,6 @@ var util = require('util')
 var ntcToken = '';
 var isLocked = true;
 
-// helper functions
-const loginNTC12 = callback => {
-  if(isLocked) {
-    isLocked = false;
-    winston.info('======= ready to hit Login API ==============');
-    const instance = axios.create({
-      httpsAgent: new https.Agent({
-        rejectUnauthorized: false
-      })
-    });
-    instance
-      .post(`${constants.ntcBaseUrl}`, {
-        process: constants.process,
-        userid: constants.ntcUserId,
-        pass: constants.ntcPass
-      })
-      .then(response => {
-        const apiResponse = response.data;
-        winston.info(`response rescode : ${apiResponse.rescode}`);
-        winston.info(`response data : ${apiResponse.data}`);
-        if (apiResponse.rescode === 1) {
-          ntcToken = apiResponse.data || '';
-          isLocked = true;
-        }
-        callback();
-      })
-      .catch(error => {
-        winston.error(`login api error: ${error}`);
-        callback();
-      });
-  }
-};
-
 const sendMessage = (to, message, callback = () => null) => {
   // winston.info('ready to hit Send Message API');
   const instance = axios.create({
@@ -146,6 +113,7 @@ module.exports.recievedSMS = async function (req, res) {
     // text contains number and its length must be 13
     const userCNIC = parseInt(text);
     if (userCNIC && userCNIC.toString().length == 13) {
+
       // check if cnic exists and its verified or not
       const isCnicExists = await db.executeQuery(`select * from users where cnic = ?`, [String(userCNIC)]);
       if (isCnicExists.length == 0) { // is cnic not exists
@@ -156,11 +124,38 @@ module.exports.recievedSMS = async function (req, res) {
           sendMessage(from, 'This Mobile No already registered with other CNIC. Please use different mobile no', () => {});
         } else {
           const OTP = Math.floor(Math.random() * 100000);
-          await db.executeQuery(`insert into users (cnic, mobile_no, otp, created_date, status) values (?,?,?,?,?)`,
-            [String(userCNIC), String(from), OTP, new Date(), true]);
-          winston.info(`Send Acknowledge to NTC: ${from}, CNIC Doesn't exist in DB. Your OTP ${OTP}`);
+
+          try{
+            // bisp verification
+           const response = await axios.post(`http://58.65.177.220:5134/api/Dashboard/GetUtilityStoreCnicVerfication?cnic=` + userCNIC, {}, {
+             headers: {
+               Authorization: `Bearer ${global.bispToken}`
+             }
+           });
+           const bispVerificationResponse = response.data;
+           console.log('bisp verification ===', userCNIC, response.data);
+           if (bispVerificationResponse && Number.isInteger(Number(bispVerificationResponse))) {
+             await db.executeQuery(`insert into users (cnic, mobile_no, otp, created_date, status) values (?,?,?,?,?)`,
+             [String(userCNIC), String(from), OTP, new Date(), true]);
+             if(bispVerificationResponse == from) {
+                sendMessage(from, `Your Bisp OTP is ${OTP}`, () => {});
+             } else {
+              sendMessage(bispVerificationResponse, `Your Bisp OTP is ${OTP}`, () => {});
+              sendMessage(bispVerificationResponse, `Your Bisp OTP sent to your registered mobile number`, () => {});
+             }
+           } else {
+             await db.executeQuery(`insert into users (cnic, mobile_no, otp, created_date, status) values (?,?,?,?,?)`,
+              [String(userCNIC), String(from), OTP, new Date(), false]);
+             sendMessage(from, `یوٹیلیٹی اسٹور پر خریداری کے لیے آپ کا کوڈ ہے۔ ${OTP}`, () => {});
+           }  
+         }catch(error) {
+           console.log('bisp error ==', error);
+         }
+
+          
+          // winston.info(`Send Acknowledge to NTC: ${from}, CNIC Doesn't exist in DB. Your OTP ${OTP}`);
           // res.status(200).send({ "rescode": 1, "message": "Success" });
-          sendMessage(from, `یوٹیلیٹی اسٹور پر خریداری کے لیے آپ کا کوڈ ہے۔ ${OTP}`, () => {});
+          
         }
       } else if (isCnicExists.length > 0 && isCnicExists[0]['mobile_no'] !== from) {  // If CNIC exists but mobile no diff
         winston.info(`Send Acknowledge to NTC: ${from}, Your CNIC registered with different mobile no`);
@@ -168,19 +163,45 @@ module.exports.recievedSMS = async function (req, res) {
         sendMessage(from, 'Your CNIC registered with different mobile no', () => {});
       } else {  // rest of scenarios handle here
         const OTP = Math.floor(Math.random() * 100000);
-        await db.executeQuery(`update users set otp = ?, status = ? where cnic = ?`, [OTP, true, String(userCNIC)]);
-        winston.info(`Send Acknowledge to NTC: ${from}, Your OTP ${OTP}`);
-        // res.status(200).send({ "rescode": 1, "message": "Success" });
-        sendMessage(from, `یوٹیلیٹی اسٹور پر خریداری کے لیے آپ کا کوڈ ہے۔ ${OTP}`, () => {});
+        // await db.executeQuery(`update users set otp = ?, status = ? where cnic = ?`, [OTP, true, String(userCNIC)]);
+        // winston.info(`Send Acknowledge to NTC: ${from}, Your OTP ${OTP}`);
+
+
+        try{
+          // bisp verification
+         const response = await axios.post(`http://58.65.177.220:5134/api/Dashboard/GetUtilityStoreCnicVerfication?cnic=` + userCNIC, {}, {
+           headers: {
+             Authorization: `Bearer ${global.bispToken}`
+           }
+         });
+         const bispVerificationResponse = response.data;
+         if (bispVerificationResponse && Number.isInteger(Number(bispVerificationResponse))) {
+           await db.executeQuery(`update users set otp = ?, status = ? where cnic = ?`, [OTP, true, String(userCNIC)]);
+           if(bispVerificationResponse == from) {
+              // res.send('Your Bisp OTP is 1122');
+              sendMessage(from, `Your Bisp OTP is ${OTP}`, () => {});
+           } else {
+            //  res.send('Your Bisp OTP number sent to your register number');
+            sendMessage(bispVerificationResponse, `Your Bisp OTP is ${OTP}`, () => {});
+            sendMessage(bispVerificationResponse, `Your Bisp OTP sent to your registered mobile number`, () => {});
+           }
+         } else {
+            await db.executeQuery(`update users set otp = ? where cnic = ?`, [OTP, String(userCNIC)]);
+            sendMessage(from, `یوٹیلیٹی اسٹور پر خریداری کے لیے آپ کا کوڈ ہے۔ ${OTP}`, () => {});
+         }  
+       }catch(error) {
+         winston.error('bisp error ==', error);
+       }
+
+
       }
     } else {
       winston.info(`Send Acknowledge to NTC: ${from}, Please send valid 13 digit CNIC without dashes ${text}`);
-      // res.status(200).send({ "rescode": 1, "message": "Success" });
       sendMessage(from, 'Please send valid 13 digit CNIC without dashes', () => {});
     }
   } catch (error) {
-    winston.info(`Send Acknowledge to NTC: ${from}, Failed Payload ${JSON.stringify(req.body)} and its error ${error}`);
-    res.status(200).send({ "rescode": 0, "message": "Failed" });
+    winston.error(`Send Acknowledge to NTC: ${from}, Failed Payload ${JSON.stringify(req.body)} and its error ${error}`);
+    res.status(200).send({ "rescode": 0, "message": error });
   }
 };
 

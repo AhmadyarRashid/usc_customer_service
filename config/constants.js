@@ -2,6 +2,7 @@ module.exports = {
     tokenKey: "F9h1jtt5h0dyYUudwoIHdZOmkOYdtmF3A0i0Nwt9uX8=",
     tokenHeaderKey: 'Bearer',
     ntcBaseUrl: 'https://sms.ntc.net.pk/rest/',
+    bispBaseUrl: 'http://58.65.177.220:5134/api/',
     process: 'APP_LOGIN',
     ntcUserId: 'usc.ntc.sms',
     ntcPass: 'usc@ntc!@#',

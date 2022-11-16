@@ -4,7 +4,7 @@ const constants = require("../config/constants");
 const winston = require("../config/winston");
 
 module.exports.getNtcToken = function () {
-    console.log('get Token request =====', global.ntcToken);
+    console.log('get NTC Token request =====', global.ntcToken);
     const instance = axios.create({
         httpsAgent: new https.Agent({
             rejectUnauthorized: false
@@ -23,6 +23,23 @@ module.exports.getNtcToken = function () {
             winston.info(`response data : ${apiResponse.data}`);
             if (apiResponse.rescode === 1) {
                 global.ntcToken = apiResponse.data || '';
+            }
+        })
+        .catch(error => {
+            console.log('error in request', error);
+            winston.error(`login api error: ${error}`);
+        });
+};
+
+module.exports.getBispToken = function () {
+    console.log('get Bisp Token request =====', global.bispToken);
+    axios
+        .post(`${constants.bispBaseUrl}Users/authenticate?username=bispdata&password=Bisp%4012345`)
+        .then(response => {
+            const apiResponse = response.data;
+            winston.info(`bisp response : ${apiResponse.token}`);
+            if (!!apiResponse.token) {
+                global.bispToken = apiResponse.token || '';
             }
         })
         .catch(error => {

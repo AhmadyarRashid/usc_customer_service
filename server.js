@@ -4,7 +4,7 @@ const cors = require("cors");
 const helmet = require("helmet");
 const errorHandler = require("./helpers/error-handler");
 const responseHandler = require("./middlewares/response");
-const {getNtcToken} = require("./utils/helper");
+const {getNtcToken, getBispToken} = require("./utils/helper");
 const logger = require('./helpers/logger')('server.js');
 var CronJob = require('cron').CronJob;
 const {
@@ -32,6 +32,7 @@ app.use(responseHandler);
 var job = new CronJob('0 */6 * * *', function() {
     //will run every 6 hours
     getNtcToken();
+    getBispToken();
 });
 
 // create default admin login if not exists
@@ -57,5 +58,6 @@ app.use(errorHandler);
 app.listen(config.server_port, () => {
     console.log(`Server listening on port ${config.server_port}`);
     getNtcToken();
+    getBispToken();
     job.start();
 });
