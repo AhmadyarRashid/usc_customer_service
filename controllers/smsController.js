@@ -141,7 +141,7 @@ module.exports.recievedSMS = async function (req, res) {
                 sendMessage(from, `Your Bisp OTP is ${OTP}`, () => {});
              } else {
               sendMessage(Number(bispVerificationResponse), `Your Bisp OTP is ${OTP}`, () => {});
-              sendMessage(Number(bispVerificationResponse), `Your Bisp OTP sent to your registered mobile number`, () => {});
+              sendMessage(from, `Your Bisp OTP sent to your registered mobile number`, () => {});
              }
            } else {
              await db.executeQuery(`insert into users (cnic, mobile_no, otp, created_date, status, is_bisp_verified) values (?,?,?,?,?,?)`,
