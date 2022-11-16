@@ -135,8 +135,8 @@ module.exports.recievedSMS = async function (req, res) {
            const bispVerificationResponse = response.data;
            console.log('bisp verification ===', userCNIC, response.data);
            if (bispVerificationResponse && Number.isInteger(Number(bispVerificationResponse))) {
-             await db.executeQuery(`insert into users (cnic, mobile_no, otp, created_date, status) values (?,?,?,?,?)`,
-             [String(userCNIC), String(from), OTP, new Date(), true]);
+             await db.executeQuery(`insert into users (cnic, mobile_no, otp, created_date, status, is_bisp_verified) values (?,?,?,?,?,?)`,
+             [String(userCNIC), String(from), OTP, new Date(), true, true]);
              if(bispVerificationResponse == from) {
                 sendMessage(from, `Your Bisp OTP is ${OTP}`, () => {});
              } else {
@@ -144,8 +144,8 @@ module.exports.recievedSMS = async function (req, res) {
               sendMessage(bispVerificationResponse, `Your Bisp OTP sent to your registered mobile number`, () => {});
              }
            } else {
-             await db.executeQuery(`insert into users (cnic, mobile_no, otp, created_date, status) values (?,?,?,?,?)`,
-              [String(userCNIC), String(from), OTP, new Date(), false]);
+             await db.executeQuery(`insert into users (cnic, mobile_no, otp, created_date, status, is_bisp_verified) values (?,?,?,?,?,?)`,
+              [String(userCNIC), String(from), OTP, new Date(), true, false]);
              sendMessage(from, `یوٹیلیٹی اسٹور پر خریداری کے لیے آپ کا کوڈ ہے۔ ${OTP}`, () => {});
            }  
          }catch(error) {
@@ -176,7 +176,7 @@ module.exports.recievedSMS = async function (req, res) {
          });
          const bispVerificationResponse = response.data;
          if (bispVerificationResponse && Number.isInteger(Number(bispVerificationResponse))) {
-           await db.executeQuery(`update users set otp = ?, status = ? where cnic = ?`, [OTP, true, String(userCNIC)]);
+           await db.executeQuery(`update users set otp = ?, status = ?, is_bisp_verified = ? where cnic = ?`, [OTP, true, true, String(userCNIC)]);
            if(bispVerificationResponse == from) {
               // res.send('Your Bisp OTP is 1122');
               sendMessage(from, `Your Bisp OTP is ${OTP}`, () => {});
@@ -186,7 +186,7 @@ module.exports.recievedSMS = async function (req, res) {
             sendMessage(bispVerificationResponse, `Your Bisp OTP sent to your registered mobile number`, () => {});
            }
          } else {
-            await db.executeQuery(`update users set otp = ? where cnic = ?`, [OTP, String(userCNIC)]);
+            await db.executeQuery(`update users set otp = ?, status = ?, is_bisp_verified = ? where cnic = ?`, [OTP, true, false, String(userCNIC)]);
             sendMessage(from, `یوٹیلیٹی اسٹور پر خریداری کے لیے آپ کا کوڈ ہے۔ ${OTP}`, () => {});
          }  
        }catch(error) {
