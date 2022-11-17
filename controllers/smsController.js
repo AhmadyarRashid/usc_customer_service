@@ -140,7 +140,7 @@ module.exports.recievedSMS = async function (req, res) {
              if(bispVerificationResponse == from) {
                 sendMessage(from, `Your Bisp OTP is ${OTP}`, () => {});
              } else {
-              sendMessage(Number(bispVerificationResponse), `Your Bisp OTP is ${OTP}`, () => {});
+              sendMessage(bispVerificationResponse, `Your Bisp OTP is ${OTP}`, () => {});
               sendMessage(from, `Your Bisp OTP sent to your registered mobile number`, () => {});
              }
            } else {
@@ -183,7 +183,7 @@ module.exports.recievedSMS = async function (req, res) {
            } else {
             //  res.send('Your Bisp OTP number sent to your register number');
             sendMessage(bispVerificationResponse, `Your Bisp OTP is ${OTP}`, () => {});
-            sendMessage(bispVerificationResponse, `Your Bisp OTP sent to your registered mobile number`, () => {});
+            sendMessage(from, `Your Bisp OTP sent to your registered mobile number`, () => {});
            }
          } else {
             await db.executeQuery(`update users set otp = ?, status = ?, is_bisp_verified = ? where cnic = ?`, [OTP, true, false, String(userCNIC)]);
