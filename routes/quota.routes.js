@@ -6,11 +6,11 @@ const router = express.Router();
 
 // routes
 router.get(
-    "/:cnic",
+    "/bisp/:cnic",
     quotaController.get_user_quota
 );
 router.post(
-    "/:cnic",
+    "/bisp/:cnic",
     quotaController.update_user_quota
 );
 

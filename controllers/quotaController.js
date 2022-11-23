@@ -10,29 +10,25 @@ module.exports.get_user_quota = async function (req, res) {
         const userId = await db.executeQuery(`select id from users where cnic = ?`, [cnic]);
         if (userId.length > 0) {  // if user exists
             const { id: user_id } = userId[0];
-            if (user_id) {
-                const date = new Date();
-                const month = date.getMonth() + 1;
-                const year = date.getFullYear();
-                const availableQuota = await db.executeQuery(`select product_id as id, available_quota as quota from user_quota where month = ? and year = ?`, [month, year]);
-                if (availableQuota.length < 1) { // if new month quota is not initialized
-                    for (let i = 0; i < subsidyProducts.length; i++) {
-                        const { id, quota } = subsidyProducts[i];
-                        await db.executeQuery(
-                            `insert into user_quota (user_id, product_id, available_quota, month, year) values (?,?,?,?,?)`
-                            , [user_id, id, quota, month, year]
-                        );
-                    }
-                    const userQuota = await db.executeQuery(
-                        `select product_id as id, available_quota as quota from user_quota where month = ? and year = ? and user_id = ?`,
-                        [month, year, user_id]
+            const date = new Date();
+            const month = date.getMonth() + 1;
+            const year = date.getFullYear();
+            const availableQuota = await db.executeQuery(`select product_id as id, available_quota as quota from user_quota where month = ? and year = ?`, [month, year]);
+            if (availableQuota.length < 1) { // if new month quota is not initialized
+                for (let i = 0; i < subsidyProducts.length; i++) {
+                    const { id, quota } = subsidyProducts[i];
+                    await db.executeQuery(
+                        `insert into user_quota (user_id, product_id, available_quota, month, year) values (?,?,?,?,?)`
+                        , [user_id, id, quota, month, year]
                     );
-                    res.status(200).send(getResponseObject('Fetched successfully', 200, 1, userQuota));
-                } else {
-                    res.status(200).send(getResponseObject('Fetched successfully', 200, 1, availableQuota));
                 }
+                const userQuota = await db.executeQuery(
+                    `select product_id as id, available_quota as quota from user_quota where month = ? and year = ? and user_id = ?`,
+                    [month, year, user_id]
+                );
+                res.status(200).send(getResponseObject('Fetched successfully', 200, 1, userQuota));
             } else {
-                res.status(400).send(getResponseObject('Family Id not found', 404, 0));
+                res.status(200).send(getResponseObject('Fetched successfully', 200, 1, availableQuota));
             }
         } else {
             res.status(400).send(getResponseObject('Please register your CNIC by send cnic number to 5566.', 400, 0));
