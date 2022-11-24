@@ -246,3 +246,25 @@ module.exports.verifyOTP = async (req, res) => {
     res.status(500).send(getResponseObject("Something went wrong.", 500, 0));
   }
 };
+
+module.exports.bispVerifyOTP = async (req, res) => {
+  const { cnic, otp: OTP } = req.body;
+  try {
+    const fetchMobileNo = await db.executeQuery(`select otp, mobile_no from users where cnic = ? limit 1`, [cnic]);
+    if (fetchMobileNo.length < 1) {
+      res.status(200).send(getResponseObject('No Data Found against CNIC', 404, 0));
+    } else {
+      const { otp, mobile_no } = fetchMobileNo[0];
+      const stericMobileNo = "+92*****" + String(mobile_no).substring(7);
+      if (OTP == otp) {
+        await db.executeQuery(`update users set otp = ?, status = ? where cnic = ?`, [null, false, cnic]);
+        res.status(200).send(getResponseObject('OTP Verified', 200, 1));
+      } else {
+        res.status(200).send(getResponseObject('Wrong OTP', 200, 0, { cnic, mobile_no: stericMobileNo }));
+      }
+    }
+  } catch (error) {
+    winston.error(`Verify OTP:  Payload ${JSON.stringify(req.body)} and its error ${error}`);
+    res.status(500).send(getResponseObject("Something went wrong.", 500, 0));
+  }
+};
