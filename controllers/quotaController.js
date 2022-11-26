@@ -7,7 +7,7 @@ const { subsidyProducts } = require("../config/constants");
 module.exports.get_user_quota = async function (req, res) {
     const { cnic } = req.params;
     try {
-        const userId = await db.executeQuery(`select id from users where cnic = ?`, [cnic]);
+        const userId = await db.executeQuery(`select id from users where cnic = ? and is_bisp_verified = 1`, [cnic]);
         if (userId.length > 0) {  // if user exists
             const { id: user_id } = userId[0];
             const date = new Date();
@@ -47,7 +47,7 @@ module.exports.update_user_quota = async (req, res) => {
         res.status(400).send(getResponseObject('Wrong Cnic format', 400, 0));
     } else {
         try {
-            const userResponse = await db.executeQuery(`select id from users where cnic = ?`, [cnic]);
+            const userResponse = await db.executeQuery(`select id from users where cnic = ? and is_bisp_verified = 1`, [cnic]);
             const date = new Date();
             const month = date.getMonth() + 1;
             const year = date.getFullYear();
