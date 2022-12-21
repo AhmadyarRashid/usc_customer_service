@@ -14,6 +14,15 @@ router.post(
     quotaController.update_user_quota
 );
 
+router.get(
+    "/general/:cnic",
+    quotaController.get_user_general_quota
+);
+router.post(
+    "/general/:cnic",
+    quotaController.update_user_general_quota
+);
+
 router.post(
     "/:cnic/familyId",
     verifyToken,
