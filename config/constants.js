@@ -21,7 +21,7 @@ module.exports = {
         {
             id: 2,
             name: 'Oil',
-            quota: 3,
+            quota: 100,
         },
         {
             id: 3,
@@ -43,7 +43,7 @@ module.exports = {
         {
             id: 2,
             name: 'Oil',
-            quota: 5,
+            quota: 100,
         },
         {
             id: 3,
