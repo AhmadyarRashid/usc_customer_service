@@ -28,5 +28,27 @@ module.exports = {
             name: 'Sugar',
             quota: 5,
         }
+    ],
+    bispSubsidyProducts: [
+        {
+            id: 0,
+            name: 'Atta',
+            quota: 3,
+        },
+        {
+            id: 1,
+            name: 'Ghee',
+            quota: 3,
+        },
+        {
+            id: 2,
+            name: 'Oil',
+            quota: 3,
+        },
+        {
+            id: 3,
+            name: 'Sugar',
+            quota: 3,
+        }
     ]
 };

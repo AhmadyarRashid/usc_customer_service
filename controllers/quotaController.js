@@ -2,7 +2,7 @@ const db = require("../helpers/db");
 const { getResponseObject } = require("../helpers/response");
 const constants = require("../config/constants");
 const winston = require("../config/winston");
-const { subsidyProducts } = require("../config/constants");
+const { subsidyProducts, bispSubsidyProducts } = require("../config/constants");
 
 module.exports.get_user_quota = async function (req, res) {
     const { cnic } = req.params;
@@ -13,10 +13,12 @@ module.exports.get_user_quota = async function (req, res) {
             const date = new Date();
             const month = date.getMonth() + 1;
             const year = date.getFullYear();
-            const availableQuota = await db.executeQuery(`select product_id as id, available_quota as quota from user_quota where month = ? and year = ?`, [month, year]);
+            const availableQuota = await db.executeQuery(`
+                select product_id as id, available_quota as quota from user_quota where month = ? and year = ? and user_id = ?`, 
+                [month, year, user_id]);
             if (availableQuota.length < 1) { // if new month quota is not initialized
-                for (let i = 0; i < subsidyProducts.length; i++) {
-                    const { id, quota } = subsidyProducts[i];
+                for (let i = 0; i < bispSubsidyProducts.length; i++) {
+                    const { id, quota } = bispSubsidyProducts[i];
                     await db.executeQuery(
                         `insert into user_quota (user_id, product_id, available_quota, month, year) values (?,?,?,?,?)`
                         , [user_id, id, quota, month, year]
@@ -119,7 +121,9 @@ module.exports.get_user_general_quota = async function (req, res) {
         const date = new Date();
         const month = date.getMonth() + 1;
         const year = date.getFullYear();
-        const availableQuota = await db.executeQuery(`select product_id as id, available_quota as quota from user_quota where month = ? and year = ?`, [month, year]);
+        const availableQuota = await db.executeQuery(`
+            select product_id as id, available_quota as quota from user_quota where month = ? and year = ? and user_id = ?`, 
+            [month, year, userId]);
         if (availableQuota.length < 1) { // if new month quota is not initialized
             for (let i = 0; i < subsidyProducts.length; i++) {
                 const { id, quota } = subsidyProducts[i];
