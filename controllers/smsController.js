@@ -135,11 +135,11 @@ module.exports.recievedSMS = async function (req, res) {
         await db.executeQuery(`update users set otp = ?, status = ?, is_bisp_verified = ?, mobile_no = ? where cnic = ?`, [BOTP, true, true, String(getBispNumber), String(userCNIC)]);
            if(getBispNumber == from) {
               // res.send('Your Bisp OTP is 1122');
-              sendMessage(from, `آپ کا (بی آئی ایس پی) کوڈ آپ کے رجسٹرڈ موبائل نمبر پر بھیجا گیا ہے۔ ${BOTP}`, () => {});
+              sendMessage(from, `یوٹیلیٹی اسٹور پر خریداری کے لیے آپ کا (بی آئی ایس پی) کوڈ ہے ${BOTP}`, () => {});
            } else {
             //  res.send('Your Bisp OTP number sent to your register number');
-            sendMessage(getBispNumber, `آپ کا (بی آئی ایس پی) کوڈ آپ کے رجسٹرڈ موبائل نمبر پر بھیجا گیا ہے۔ ${BOTP}`, () => {});
-            sendMessage(from, `Your Bisp OTP sent to your registered mobile number`, () => {});
+            sendMessage(getBispNumber, `یوٹیلیٹی اسٹور پر خریداری کے لیے آپ کا (بی آئی ایس پی) کوڈ ہے ${BOTP}`, () => {});
+            sendMessage(from, `آپ کا (بی آئی ایس پی) کوڈ آپ کے رجسٹرڈ موبائل نمبر پر بھیجا گیا ہے۔`, () => {});
            }
         return;
       }
@@ -167,10 +167,10 @@ module.exports.recievedSMS = async function (req, res) {
              await db.executeQuery(`insert into users (cnic, mobile_no, otp, created_date, status, is_bisp_verified) values (?,?,?,?,?,?)`,
              [String(userCNIC), String(bispVerificationResponse), OTP, new Date(), true, true]);
              if(bispVerificationResponse == from) {
-                sendMessage(from, `آپ کا (بی آئی ایس پی) کوڈ آپ کے رجسٹرڈ موبائل نمبر پر بھیجا گیا ہے۔ ${OTP}`, () => {});
+                sendMessage(from, `یوٹیلیٹی اسٹور پر خریداری کے لیے آپ کا (بی آئی ایس پی) کوڈ ہے ${OTP}`, () => {});
              } else {
-              sendMessage(bispVerificationResponse, `آپ کا (بی آئی ایس پی) کوڈ آپ کے رجسٹرڈ موبائل نمبر پر بھیجا گیا ہے۔ ${OTP}`, () => {});
-              sendMessage(from, `Your Bisp OTP sent to your registered mobile number`, () => {});
+              sendMessage(bispVerificationResponse, `یوٹیلیٹی اسٹور پر خریداری کے لیے آپ کا (بی آئی ایس پی) کوڈ ہے ${OTP}`, () => {});
+              sendMessage(from, `آپ کا (بی آئی ایس پی) کوڈ آپ کے رجسٹرڈ موبائل نمبر پر بھیجا گیا ہے۔`, () => {});
              }
            } else {
              await db.executeQuery(`insert into users (cnic, mobile_no, otp, created_date, status, is_bisp_verified) values (?,?,?,?,?,?)`,
@@ -208,11 +208,11 @@ module.exports.recievedSMS = async function (req, res) {
            await db.executeQuery(`update users set otp = ?, status = ?, is_bisp_verified = ?, mobile_no = ? where cnic = ?`, [OTP, true, true, String(bispVerificationResponse), String(userCNIC)]);
            if(bispVerificationResponse == from) {
               // res.send('Your Bisp OTP is 1122');
-              sendMessage(from, `.یوٹیلیٹی اسٹور پر خریداری کے لیے آپ کا کوڈ ہے Bisp Code: ${OTP}`, () => {});
+              sendMessage(from, `یوٹیلیٹی اسٹور پر خریداری کے لیے آپ کا (بی آئی ایس پی) کوڈ ہے ${OTP}`, () => {});
            } else {
             //  res.send('Your Bisp OTP number sent to your register number');
-            sendMessage(bispVerificationResponse, `آپ کا (بی آئی ایس پی) کوڈ آپ کے رجسٹرڈ موبائل نمبر پر بھیجا گیا ہے۔ ${OTP}`, () => {});
-            sendMessage(from, `Your Bisp OTP sent to your registered mobile number`, () => {});
+            sendMessage(bispVerificationResponse, `یوٹیلیٹی اسٹور پر خریداری کے لیے آپ کا (بی آئی ایس پی) کوڈ ہے ${OTP}`, () => {});
+            sendMessage(from, `آپ کا (بی آئی ایس پی) کوڈ آپ کے رجسٹرڈ موبائل نمبر پر بھیجا گیا ہے۔`, () => {});
            }
          } else {
             await db.executeQuery(`update users set otp = ?, status = ?, is_bisp_verified = ? where cnic = ?`, [OTP, true, false, String(userCNIC)]);
