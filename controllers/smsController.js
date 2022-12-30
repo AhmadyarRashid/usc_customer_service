@@ -108,13 +108,42 @@ module.exports.login = async function (req, res) {
 module.exports.recievedSMS = async function (req, res) {
   winston.info(`Receive NTC SMS Request Body: ${JSON.stringify(req.body)}`);
   const { from, text } = req.body;
+  let getBispNumber = '';
   res.status(200).send({ "rescode": 1, "message": "Success" });
   try {
     // text contains number and its length must be 13
     const userCNIC = parseInt(text);
     if (userCNIC && userCNIC.toString().length == 13) {
 
+      // first of all get mobile no from  bisp verification
+      try {
+        const responseB = await axios.post(`http://58.65.177.220:5134/api/Dashboard/GetUtilityStoreCnicVerfication?cnic=` + userCNIC, {}, {
+          headers: {
+            Authorization: `Bearer ${global.bispToken}`
+          }
+        });
+        getBispNumber = responseB.data;
+      } catch(error) {
+        // ignore bisp is not working
+        winston.error(String(error));
+      }
+
       // check if cnic exists and its verified or not
+      const checkBispEntryExists = await db.executeQuery(`select * from users where cnic = ? and mobile_no = ?;`, [String(userCNIC), String(getBispNumber)]);
+      if(checkBispEntryExists.length > 0) {
+        const BOTP = Math.floor(Math.random() * 100000);
+        await db.executeQuery(`update users set otp = ?, status = ?, is_bisp_verified = ?, mobile_no = ? where cnic = ?`, [BOTP, true, true, String(getBispNumber), String(userCNIC)]);
+           if(getBispNumber == from) {
+              // res.send('Your Bisp OTP is 1122');
+              sendMessage(from, `.یوٹیلیٹی اسٹور پر خریداری کے لیے آپ کا کوڈ ہے Bisp Code: ${BOTP}`, () => {});
+           } else {
+            //  res.send('Your Bisp OTP number sent to your register number');
+            sendMessage(getBispNumber, `.یوٹیلیٹی اسٹور پر خریداری کے لیے آپ کا کوڈ ہے Bisp Code: ${BOTP}`, () => {});
+            sendMessage(from, `Your Bisp OTP sent to your registered mobile number`, () => {});
+           }
+        return;
+      }
+
       const isCnicExists = await db.executeQuery(`select * from users where cnic = ?`, [String(userCNIC)]);
       if (isCnicExists.length == 0) { // is cnic not exists
         const isMobileNoExists = await db.executeQuery(`select * from users where mobile_no = ?`, [from]);
@@ -127,20 +156,20 @@ module.exports.recievedSMS = async function (req, res) {
 
           try{
             // bisp verification
-           const response = await axios.post(`http://58.65.177.220:5134/api/Dashboard/GetUtilityStoreCnicVerfication?cnic=` + userCNIC, {}, {
-             headers: {
-               Authorization: `Bearer ${global.bispToken}`
-             }
-           });
-           const bispVerificationResponse = response.data;
-           console.log('bisp verification ===', userCNIC, response.data);
+          //  const response = await axios.post(`http://58.65.177.220:5134/api/Dashboard/GetUtilityStoreCnicVerfication?cnic=` + userCNIC, {}, {
+          //    headers: {
+          //      Authorization: `Bearer ${global.bispToken}`
+          //    }
+          //  });
+           const bispVerificationResponse = getBispNumber;
+           console.log('bisp verification ===', userCNIC, getBispNumber);
            if (bispVerificationResponse && Number.isInteger(Number(bispVerificationResponse))) {
              await db.executeQuery(`insert into users (cnic, mobile_no, otp, created_date, status, is_bisp_verified) values (?,?,?,?,?,?)`,
-             [String(userCNIC), String(from), OTP, new Date(), true, true]);
+             [String(userCNIC), String(bispVerificationResponse), OTP, new Date(), true, true]);
              if(bispVerificationResponse == from) {
-                sendMessage(from, `Your Bisp OTP is ${OTP}`, () => {});
+                sendMessage(from, `.یوٹیلیٹی اسٹور پر خریداری کے لیے آپ کا کوڈ ہے Bisp Code: ${OTP}`, () => {});
              } else {
-              sendMessage(bispVerificationResponse, `Your Bisp OTP is ${OTP}`, () => {});
+              sendMessage(bispVerificationResponse, `.یوٹیلیٹی اسٹور پر خریداری کے لیے آپ کا کوڈ ہے Bisp Code: ${OTP}`, () => {});
               sendMessage(from, `Your Bisp OTP sent to your registered mobile number`, () => {});
              }
            } else {
@@ -169,20 +198,20 @@ module.exports.recievedSMS = async function (req, res) {
 
         try{
           // bisp verification
-         const response = await axios.post(`http://58.65.177.220:5134/api/Dashboard/GetUtilityStoreCnicVerfication?cnic=` + userCNIC, {}, {
-           headers: {
-             Authorization: `Bearer ${global.bispToken}`
-           }
-         });
-         const bispVerificationResponse = response.data;
+        //  const response = await axios.post(`http://58.65.177.220:5134/api/Dashboard/GetUtilityStoreCnicVerfication?cnic=` + userCNIC, {}, {
+        //    headers: {
+        //      Authorization: `Bearer ${global.bispToken}`
+        //    }
+        //  });
+         const bispVerificationResponse = getBispNumber;
          if (bispVerificationResponse && Number.isInteger(Number(bispVerificationResponse))) {
-           await db.executeQuery(`update users set otp = ?, status = ?, is_bisp_verified = ? where cnic = ?`, [OTP, true, true, String(userCNIC)]);
+           await db.executeQuery(`update users set otp = ?, status = ?, is_bisp_verified = ?, mobile_no = ? where cnic = ?`, [OTP, true, true, String(bispVerificationResponse), String(userCNIC)]);
            if(bispVerificationResponse == from) {
               // res.send('Your Bisp OTP is 1122');
-              sendMessage(from, `Your Bisp OTP is ${OTP}`, () => {});
+              sendMessage(from, `.یوٹیلیٹی اسٹور پر خریداری کے لیے آپ کا کوڈ ہے Bisp Code: ${OTP}`, () => {});
            } else {
             //  res.send('Your Bisp OTP number sent to your register number');
-            sendMessage(bispVerificationResponse, `Your Bisp OTP is ${OTP}`, () => {});
+            sendMessage(bispVerificationResponse, `.یوٹیلیٹی اسٹور پر خریداری کے لیے آپ کا کوڈ ہے Bisp Code:s ${OTP}`, () => {});
             sendMessage(from, `Your Bisp OTP sent to your registered mobile number`, () => {});
            }
          } else {
