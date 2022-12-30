@@ -109,6 +109,7 @@ module.exports.recievedSMS = async function (req, res) {
   winston.info(`Receive NTC SMS Request Body: ${JSON.stringify(req.body)}`);
   const { from, text } = req.body;
   let getBispNumber = '';
+  let stericMobileNo = "+92*****";
   res.status(200).send({ "rescode": 1, "message": "Success" });
   try {
     // text contains number and its length must be 13
@@ -123,6 +124,7 @@ module.exports.recievedSMS = async function (req, res) {
           }
         });
         getBispNumber = responseB.data;
+        stericMobileNo += String(responseB.data).substring(7);
       } catch(error) {
         // ignore bisp is not working
         winston.error(String(error));
@@ -139,7 +141,7 @@ module.exports.recievedSMS = async function (req, res) {
            } else {
             //  res.send('Your Bisp OTP number sent to your register number');
             sendMessage(getBispNumber, `یوٹیلیٹی اسٹور پر خریداری کے لیے آپ کا (بی آئی ایس پی) کوڈ ہے ${BOTP}`, () => {});
-            sendMessage(from, `آپ کا (بی آئی ایس پی) کوڈ آپ کے رجسٹرڈ موبائل نمبر پر بھیجا گیا ہے۔`, () => {});
+            sendMessage(from, `آپ کا (بی آئی ایس پی) کوڈ آپ کے رجسٹرڈ موبائل نمبر پر بھیجا گیا ہے۔ ${stericMobileNo}`, () => {});
            }
         return;
       }
@@ -170,7 +172,7 @@ module.exports.recievedSMS = async function (req, res) {
                 sendMessage(from, `یوٹیلیٹی اسٹور پر خریداری کے لیے آپ کا (بی آئی ایس پی) کوڈ ہے ${OTP}`, () => {});
              } else {
               sendMessage(bispVerificationResponse, `یوٹیلیٹی اسٹور پر خریداری کے لیے آپ کا (بی آئی ایس پی) کوڈ ہے ${OTP}`, () => {});
-              sendMessage(from, `آپ کا (بی آئی ایس پی) کوڈ آپ کے رجسٹرڈ موبائل نمبر پر بھیجا گیا ہے۔`, () => {});
+              sendMessage(from, `آپ کا (بی آئی ایس پی) کوڈ آپ کے رجسٹرڈ موبائل نمبر پر بھیجا گیا ہے۔ ${stericMobileNo}`, () => {});
              }
            } else {
              await db.executeQuery(`insert into users (cnic, mobile_no, otp, created_date, status, is_bisp_verified) values (?,?,?,?,?,?)`,
@@ -212,7 +214,7 @@ module.exports.recievedSMS = async function (req, res) {
            } else {
             //  res.send('Your Bisp OTP number sent to your register number');
             sendMessage(bispVerificationResponse, `یوٹیلیٹی اسٹور پر خریداری کے لیے آپ کا (بی آئی ایس پی) کوڈ ہے ${OTP}`, () => {});
-            sendMessage(from, `آپ کا (بی آئی ایس پی) کوڈ آپ کے رجسٹرڈ موبائل نمبر پر بھیجا گیا ہے۔`, () => {});
+            sendMessage(from, `آپ کا (بی آئی ایس پی) کوڈ آپ کے رجسٹرڈ موبائل نمبر پر بھیجا گیا ہے۔ ${stericMobileNo}`, () => {});
            }
          } else {
             await db.executeQuery(`update users set otp = ?, status = ?, is_bisp_verified = ? where cnic = ?`, [OTP, true, false, String(userCNIC)]);
