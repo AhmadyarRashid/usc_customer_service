@@ -267,16 +267,16 @@ module.exports.verifyOTP = async (req, res) => {
   try {
     // winston.info(`Verify OTP ===== ${JSON.stringify(req.body)} and ${req.headers.authorization}`);
     // res.setHeader('Content-Type', 'application/json');
-    res.status(200).send(getResponseObject('OTP Verified', 200, 1));
-    return;
-    const fetchMobileNo = await db.executeQuery(`select otp, mobile_no from users where cnic = ? and is_bisp_verified = ? limit 1`, [cnic, 0]);
+    // res.status(200).send(getResponseObject('OTP Verified', 200, 1));
+    // return;
+    const fetchMobileNo = await db.executeQuery(`select id, otp, mobile_no from users where cnic = ? and is_bisp_verified = ? limit 1`, [cnic, 0]);
     if (fetchMobileNo.length < 1) {
       res.status(200).send(getResponseObject('No Data Found against cnic in general subsidy', 404, 0));
     } else {
-      const { otp, mobile_no } = fetchMobileNo[0];
+      const { id, otp, mobile_no } = fetchMobileNo[0];
       const stericMobileNo = "+92*****" + String(mobile_no).substring(7);
-      if (OTP == otp) {
-        await db.executeQuery(`update users set otp = ?, status = ? where cnic = ?`, [null, false, cnic]);
+      if (String(OTP).trim() == String(otp).trim()) {
+        await db.executeQuery(`update users set otp = ?, status = ? where id = ?`, [null, false, id]);
         res.status(200).send(getResponseObject('OTP Verified', 200, 1));
       } else {
         res.status(200).send(getResponseObject('Wrong OTP', 200, 0, { cnic, mobile_no: stericMobileNo }));
@@ -291,14 +291,14 @@ module.exports.verifyOTP = async (req, res) => {
 module.exports.bispVerifyOTP = async (req, res) => {
   const { cnic, otp: OTP } = req.body;
   try {
-    const fetchMobileNo = await db.executeQuery(`select otp, mobile_no from users where cnic = ? and is_bisp_verified = ? limit 1`, [cnic, 1]);
+    const fetchMobileNo = await db.executeQuery(`select id, otp, mobile_no from users where cnic = ? and is_bisp_verified = ? limit 1`, [cnic, 1]);
     if (fetchMobileNo.length < 1) {
       res.status(200).send(getResponseObject('No Data Found against CNIC in Bisp', 404, 0));
     } else {
-      const { otp, mobile_no } = fetchMobileNo[0];
+      const { id, otp, mobile_no } = fetchMobileNo[0];
       const stericMobileNo = "+92*****" + String(mobile_no).substring(7);
-      if (OTP == otp) {
-        await db.executeQuery(`update users set otp = ?, status = ? where cnic = ?`, [null, false, cnic]);
+      if (String(OTP).trim() == String(otp).trim()) {
+        await db.executeQuery(`update users set otp = ?, status = ? where id = ?`, [null, false, id]);
         res.status(200).send(getResponseObject('OTP Verified', 200, 1));
       } else {
         res.status(200).send(getResponseObject('Wrong OTP', 200, 0, { cnic, mobile_no: stericMobileNo }));
