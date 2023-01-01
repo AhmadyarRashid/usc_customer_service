@@ -130,51 +130,52 @@ module.exports.recievedSMS = async function (req, res) {
         winston.error(String(error));
       }
 
+      const isCnicExists = await db.executeQuery(`select * from users where cnic = ?`, [String(userCNIC)]);
+
       // check if cnic exists and its verified or not
-      const checkBispEntryExists = await db.executeQuery(`select * from users where cnic = ? and mobile_no = ?;`, [String(userCNIC), String(getBispNumber)]);
-      if(checkBispEntryExists.length > 0) {
+      if(!!getBispNumber) {
         const BOTP = Math.floor(Math.random() * 100000);
-        await db.executeQuery(`update users set otp = ?, status = ?, is_bisp_verified = ?, mobile_no = ? where cnic = ?`, [BOTP, true, true, String(getBispNumber), String(userCNIC)]);
+        const checkBispEntryExists = await db.executeQuery(`select * from users where cnic = ? and mobile_no = ?;`, [String(userCNIC), String(getBispNumber)]);
+        if(checkBispEntryExists.length > 0) {
+          await db.executeQuery(`update users set otp = ?, status = ?, is_bisp_verified = ?, mobile_no = ? where cnic = ?`, [BOTP, true, true, String(getBispNumber), String(userCNIC)]);
+             if(getBispNumber == from) {
+                sendMessage(from, `یوٹیلیٹی اسٹور پر خریداری کے لیے آپ کا (بی آئی ایس پی) کوڈ ہے ${BOTP}`, () => {});
+             } else {
+              sendMessage(getBispNumber, `یوٹیلیٹی اسٹور پر خریداری کے لیے آپ کا (بی آئی ایس پی) کوڈ ہے ${BOTP}`, () => {});
+              sendMessage(from, `آپ کا (بی آئی ایس پی) کوڈ آپ کے رجسٹرڈ موبائل نمبر پر بھیجا گیا ہے۔ ${stericMobileNo}`, () => {});
+             }
+          return;
+        } else if (isCnicExists.length > 0 && getBispNumber !== from && getBispNumber && Number.isInteger(Number(getBispNumber))) {
+          await db.executeQuery(`update users set otp = ?, status = ?, is_bisp_verified = ?, mobile_no = ? where cnic = ?`, [BOTP, true, true, String(getBispNumber), String(userCNIC)]);
            if(getBispNumber == from) {
-              // res.send('Your Bisp OTP is 1122');
               sendMessage(from, `یوٹیلیٹی اسٹور پر خریداری کے لیے آپ کا (بی آئی ایس پی) کوڈ ہے ${BOTP}`, () => {});
            } else {
-            //  res.send('Your Bisp OTP number sent to your register number');
             sendMessage(getBispNumber, `یوٹیلیٹی اسٹور پر خریداری کے لیے آپ کا (بی آئی ایس پی) کوڈ ہے ${BOTP}`, () => {});
             sendMessage(from, `آپ کا (بی آئی ایس پی) کوڈ آپ کے رجسٹرڈ موبائل نمبر پر بھیجا گیا ہے۔ ${stericMobileNo}`, () => {});
            }
-        return;
+           return;
+        } else {
+          await db.executeQuery(`insert into users (cnic, mobile_no, otp, created_date, status, is_bisp_verified) values (?,?,?,?,?,?)`,
+          [String(userCNIC), String(getBispNumber), BOTP, new Date(), true, true]);
+          if(getBispNumber == from) {
+             sendMessage(from, `یوٹیلیٹی اسٹور پر خریداری کے لیے آپ کا (بی آئی ایس پی) کوڈ ہے ${BOTP}`, () => {});
+          } else {
+           sendMessage(getBispNumber, `یوٹیلیٹی اسٹور پر خریداری کے لیے آپ کا (بی آئی ایس پی) کوڈ ہے ${BOTP}`, () => {});
+           sendMessage(from, `آپ کا (بی آئی ایس پی) کوڈ آپ کے رجسٹرڈ موبائل نمبر پر بھیجا گیا ہے۔ ${stericMobileNo}`, () => {});
+          }
+          return;
+        }
       }
 
-      const isCnicExists = await db.executeQuery(`select * from users where cnic = ?`, [String(userCNIC)]);
       if (isCnicExists.length == 0) { // is cnic not exists
         const isMobileNoExists = await db.executeQuery(`select * from users where mobile_no = ?`, [from]);
         if (isMobileNoExists.length > 0) {
           winston.info(`Send Acknowledge to NTC: ${from},  Mobile No already registered with other CNIC`);
-          // res.status(200).send({ "rescode": 1, "message": "Success" });
           sendMessage(from, 'This Mobile No already registered with other CNIC. Please use different mobile no', () => {});
         } else {
           const OTP = Math.floor(Math.random() * 100000);
 
           try{
-            // bisp verification
-          //  const response = await axios.post(`http://58.65.177.220:5134/api/Dashboard/GetUtilityStoreCnicVerfication?cnic=` + userCNIC, {}, {
-          //    headers: {
-          //      Authorization: `Bearer ${global.bispToken}`
-          //    }
-          //  });
-           const bispVerificationResponse = getBispNumber;
-           console.log('bisp verification ===', userCNIC, getBispNumber);
-           if (bispVerificationResponse && Number.isInteger(Number(bispVerificationResponse))) {
-             await db.executeQuery(`insert into users (cnic, mobile_no, otp, created_date, status, is_bisp_verified) values (?,?,?,?,?,?)`,
-             [String(userCNIC), String(bispVerificationResponse), OTP, new Date(), true, true]);
-             if(bispVerificationResponse == from) {
-                sendMessage(from, `یوٹیلیٹی اسٹور پر خریداری کے لیے آپ کا (بی آئی ایس پی) کوڈ ہے ${OTP}`, () => {});
-             } else {
-              sendMessage(bispVerificationResponse, `یوٹیلیٹی اسٹور پر خریداری کے لیے آپ کا (بی آئی ایس پی) کوڈ ہے ${OTP}`, () => {});
-              sendMessage(from, `آپ کا (بی آئی ایس پی) کوڈ آپ کے رجسٹرڈ موبائل نمبر پر بھیجا گیا ہے۔ ${stericMobileNo}`, () => {});
-             }
-           } else {
              db.executeQuery(`insert into users (cnic, mobile_no, otp, created_date, status, is_bisp_verified) values (?,?,?,?,?,?)`,
               [String(userCNIC), String(from), OTP, new Date(), true, false])
              .then(() => {
@@ -183,19 +184,13 @@ module.exports.recievedSMS = async function (req, res) {
              .catch(err => {
                 winston.error('Error in update general subsidy line 184 == ', err);
              });
-           }  
          }catch(error) {
            console.log('bisp error ==', error);
          }
-
-          
-          // winston.info(`Send Acknowledge to NTC: ${from}, CNIC Doesn't exist in DB. Your OTP ${OTP}`);
-          // res.status(200).send({ "rescode": 1, "message": "Success" });
           
         }
       } else if (isCnicExists.length > 0 && isCnicExists[0]['mobile_no'] !== from) {  // If CNIC exists but mobile no diff
         winston.info(`Send Acknowledge to NTC: ${from}, Your CNIC registered with different mobile no`);
-        // res.status(200).send({ "rescode": 1, "message": "Success" });
         sendMessage(from, 'Your CNIC registered with different mobile no', () => {});
       } else {  // rest of scenarios handle here
         const OTP = Math.floor(Math.random() * 100000);
@@ -204,24 +199,6 @@ module.exports.recievedSMS = async function (req, res) {
 
 
         try{
-          // bisp verification
-        //  const response = await axios.post(`http://58.65.177.220:5134/api/Dashboard/GetUtilityStoreCnicVerfication?cnic=` + userCNIC, {}, {
-        //    headers: {
-        //      Authorization: `Bearer ${global.bispToken}`
-        //    }
-        //  });
-         const bispVerificationResponse = getBispNumber;
-         if (bispVerificationResponse && Number.isInteger(Number(bispVerificationResponse))) {
-           await db.executeQuery(`update users set otp = ?, status = ?, is_bisp_verified = ?, mobile_no = ? where cnic = ?`, [OTP, true, true, String(bispVerificationResponse), String(userCNIC)]);
-           if(bispVerificationResponse == from) {
-              // res.send('Your Bisp OTP is 1122');
-              sendMessage(from, `یوٹیلیٹی اسٹور پر خریداری کے لیے آپ کا (بی آئی ایس پی) کوڈ ہے ${OTP}`, () => {});
-           } else {
-            //  res.send('Your Bisp OTP number sent to your register number');
-            sendMessage(bispVerificationResponse, `یوٹیلیٹی اسٹور پر خریداری کے لیے آپ کا (بی آئی ایس پی) کوڈ ہے ${OTP}`, () => {});
-            sendMessage(from, `آپ کا (بی آئی ایس پی) کوڈ آپ کے رجسٹرڈ موبائل نمبر پر بھیجا گیا ہے۔ ${stericMobileNo}`, () => {});
-           }
-         } else {
             db.executeQuery(`update users set otp = ?, status = ?, is_bisp_verified = ? where cnic = ?`, [OTP, true, false, String(userCNIC)])
               .then(() => {
                 sendMessage(from, `یوٹیلیٹی اسٹور پر خریداری کے لیے آپ کا کوڈ ہے۔ ${OTP}`, () => {});
@@ -229,11 +206,9 @@ module.exports.recievedSMS = async function (req, res) {
               .catch(err => {
                 winston.error('error on update general subsidy line no 230 ==', err);
               });
-         }  
-       }catch(error) {
+        }catch(error) {
          winston.error('bisp error ==', error);
-       }
-
+        }
 
       }
     } else {
