@@ -175,9 +175,14 @@ module.exports.recievedSMS = async function (req, res) {
               sendMessage(from, `آپ کا (بی آئی ایس پی) کوڈ آپ کے رجسٹرڈ موبائل نمبر پر بھیجا گیا ہے۔ ${stericMobileNo}`, () => {});
              }
            } else {
-             await db.executeQuery(`insert into users (cnic, mobile_no, otp, created_date, status, is_bisp_verified) values (?,?,?,?,?,?)`,
-              [String(userCNIC), String(from), OTP, new Date(), true, false]);
-             sendMessage(from, `یوٹیلیٹی اسٹور پر خریداری کے لیے آپ کا کوڈ ہے۔ ${OTP}`, () => {});
+             db.executeQuery(`insert into users (cnic, mobile_no, otp, created_date, status, is_bisp_verified) values (?,?,?,?,?,?)`,
+              [String(userCNIC), String(from), OTP, new Date(), true, false])
+             .then(() => {
+                sendMessage(from, `یوٹیلیٹی اسٹور پر خریداری کے لیے آپ کا کوڈ ہے۔ ${OTP}`, () => {});
+             })
+             .catch(err => {
+                winston.error('Error in update general subsidy line 184 == ', err);
+             });
            }  
          }catch(error) {
            console.log('bisp error ==', error);
@@ -217,8 +222,13 @@ module.exports.recievedSMS = async function (req, res) {
             sendMessage(from, `آپ کا (بی آئی ایس پی) کوڈ آپ کے رجسٹرڈ موبائل نمبر پر بھیجا گیا ہے۔ ${stericMobileNo}`, () => {});
            }
          } else {
-            await db.executeQuery(`update users set otp = ?, status = ?, is_bisp_verified = ? where cnic = ?`, [OTP, true, false, String(userCNIC)]);
-            sendMessage(from, `یوٹیلیٹی اسٹور پر خریداری کے لیے آپ کا کوڈ ہے۔ ${OTP}`, () => {});
+            db.executeQuery(`update users set otp = ?, status = ?, is_bisp_verified = ? where cnic = ?`, [OTP, true, false, String(userCNIC)])
+              .then(() => {
+                sendMessage(from, `یوٹیلیٹی اسٹور پر خریداری کے لیے آپ کا کوڈ ہے۔ ${OTP}`, () => {});
+              })
+              .catch(err => {
+                winston.error('error on update general subsidy line no 230 ==', err);
+              });
          }  
        }catch(error) {
          winston.error('bisp error ==', error);
