@@ -3,7 +3,7 @@ const config = require("../config/config");
 
 // create db pool based on config
 const pool = mysql.createPool({
-  connectionLimit: 200,
+  connectionLimit: 100,
   host: config.db_host,
   port: config.db_port,
   user: config.db_user,
