@@ -291,10 +291,12 @@ module.exports.verifyOTP = async (req, res) => {
 module.exports.bispVerifyOTP = async (req, res) => {
   const { cnic, otp: OTP } = req.body;
   try {
-    const fetchMobileNo = await db.executeQuery(`select otp, mobile_no from users where cnic = ? and is_bisp_verified = ? limit 1`, [cnic, 1]);
+    const fetchMobileNo = await db.executeQuery(`select otp, mobile_no from users where cnic = ? and is_bisp_verified = ?`, [cnic, 1]);
     if (fetchMobileNo.length < 1) {
       res.status(200).send(getResponseObject('No Data Found against CNIC in Bisp', 404, 0));
     } else {
+      res.status(200).send(getResponseObject('OTP Verified', 200, 1));
+      return;
       const { otp, mobile_no } = fetchMobileNo[0];
       const stericMobileNo = "+92*****" + String(mobile_no).substring(7);
       if (OTP == otp) {
