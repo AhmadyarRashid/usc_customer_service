@@ -267,8 +267,8 @@ module.exports.verifyOTP = async (req, res) => {
   try {
     // winston.info(`Verify OTP ===== ${JSON.stringify(req.body)} and ${req.headers.authorization}`);
     // res.setHeader('Content-Type', 'application/json');
-    const blacklist = ['1234', '12345', '123456', '7777', '1111', '11111', '2222', '22222'];
-    if (blacklist.indexOf(String(OTP)) > -1) {
+    const blacklist = ['1234', '12345', '123456', '7777', '1111', '11111', '2222', '22222', ''];
+    if (blacklist.indexOf(String(OTP).trim()) > -1) {
       res.status(200).send(getResponseObject('Wrong OTP', 200, 0));
       return;
     }
