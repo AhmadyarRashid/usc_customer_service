@@ -297,31 +297,50 @@ module.exports.verifyOTP = async (req, res) => {
 module.exports.bispVerifyOTP = async (req, res) => {
   const { cnic, otp: OTP } = req.body;
   winston.info(`BISP Verify OTP ===== ${cnic} and ${OTP}`);
-  try {
-    const blacklist = ['1234', '12345', '123456', '7777', '1111', '11111', '2222', '22222', ''];
-    if (blacklist.indexOf(String(OTP).trim()) > - 1 || !String(OTP).trim()) {
+  // try {
+    // const blacklist = ['1234', '12345', '123456', '7777', '1111', '11111', '2222', '22222', ''];
+    // if (blacklist.indexOf(String(OTP).trim()) > - 1 || !String(OTP).trim()) {
+    //   res.status(200).send(getResponseObject('Wrong OTP', 200, 0));
+    //   return;
+    // }
+    // res.status(200).send(getResponseObject('OTP Verified', 200, 1));
+    // return;
+
+    if (!String(OTP).trim()) {
       res.status(200).send(getResponseObject('Wrong OTP', 200, 0));
       return;
     }
-    res.status(200).send(getResponseObject('OTP Verified', 200, 1));
-    return;
-    const fetchMobileNo = await db.executeQuery(`select otp, mobile_no from users where cnic = ? and is_bisp_verified = ?`, [cnic, 1]);
-    if (fetchMobileNo.length < 1) {
-      res.status(200).send(getResponseObject('No Data Found against CNIC in Bisp', 404, 0));
-    } else {
-      res.status(200).send(getResponseObject('OTP Verified', 200, 1));
-      return;
-      const { otp, mobile_no } = fetchMobileNo[0];
-      const stericMobileNo = "+92*****" + String(mobile_no).substring(7);
-      if (OTP == otp) {
-        await db.executeQuery(`update users set otp = ?, status = ? where cnic = ?`, [null, false, cnic]);
-        res.status(200).send(getResponseObject('OTP Verified', 200, 1));
-      } else {
-        res.status(200).send(getResponseObject('Wrong OTP', 200, 0, { cnic, mobile_no: stericMobileNo }));
-      }
-    }
-  } catch (error) {
-    winston.error(`Verify OTP:  Payload ${JSON.stringify(req.body)} and its error ${error}`);
-    res.status(500).send(getResponseObject("Something went wrong.", 500, 0));
-  }
+    db.executeQuery(`select otp, mobile_no from users where cnic = ? and is_bisp_verified = 1`, [cnic])
+      .then(fetchMobileNo => {
+        if (fetchMobileNo.length < 1) {
+          res.status(200).send(getResponseObject('No Data Found against CNIC in Bisp', 404, 0));
+        } else {
+          // res.status(200).send(getResponseObject('OTP Verified', 200, 1));
+          // return;
+          const { otp, mobile_no } = fetchMobileNo[0];
+          const stericMobileNo = "+92*****" + String(mobile_no).substring(7);
+          if (String(OTP).trim() == String(otp).trim()) {
+            db.executeQuery(`update users set otp = ?, status = ? where cnic = ?`, [null, 0, cnic])
+              .then(() => {
+                winston.info(`BISP Verify OTP Verified ===== ${cnic} and ${OTP}`);
+                res.status(200).send(getResponseObject('OTP Verified', 200, 1));
+              })
+              .catch(err => {
+                winston.error(`BISP Verify OTP failed to update ===== ${cnic} and ${OTP} and error : ${err}`);
+                res.status(200).send(getResponseObject('Failed to update. Please try again later', 200, 0));
+              });
+          } else {
+            winston.info(`Bisp wrong otp ===== ${cnic} and ${OTP}`);
+            res.status(200).send(getResponseObject('Wrong OTP', 200, 0, { cnic, mobile_no: stericMobileNo }));
+          }
+        }
+      })
+      .catch(error => {
+        winston.error(`BISP Verify OTP Failed ===== ${cnic} and ${OTP}, error ${error}`);
+        res.status(500).send(getResponseObject("Something went wrong.", 500, 0));
+      });
+  // } catch (error) {
+  //   winston.error(`Verify OTP:  Payload ${JSON.stringify(req.body)} and its error ${error}`);
+  //   res.status(500).send(getResponseObject("Something went wrong.", 500, 0));
+  // }
 };
