@@ -268,22 +268,26 @@ module.exports.verifyOTP = async (req, res) => {
   const { cnic, otp: OTP } = req.body;
   winston.info(`General Verify OTP ===== ${cnic} and ${OTP}`);
   try {
-    // winston.info(`Verify OTP ===== ${JSON.stringify(req.body)} and ${req.headers.authorization}`);
-    // res.setHeader('Content-Type', 'application/json');
-    const blacklist = ['1234', '12345', '123456', '7777', '1111', '11111', '2222', '22222', ''];
-    if (blacklist.indexOf(String(OTP).trim()) > - 1 || !String(OTP).trim()) {
+    if (!String(OTP).trim()) {
       res.status(200).send(getResponseObject('Wrong OTP', 200, 0));
       return;
     }
-    res.status(200).send(getResponseObject('OTP Verified', 200, 1));
-    return;
+    // winston.info(`Verify OTP ===== ${JSON.stringify(req.body)} and ${req.headers.authorization}`);
+    // res.setHeader('Content-Type', 'application/json');
+    // const blacklist = ['1234', '12345', '123456', '7777', '1111', '11111', '2222', '22222', ''];
+    // if (blacklist.indexOf(String(OTP).trim()) > - 1 || !String(OTP).trim()) {
+    //   res.status(200).send(getResponseObject('Wrong OTP', 200, 0));
+    //   return;
+    // }
+    // res.status(200).send(getResponseObject('OTP Verified', 200, 1));
+    // return;
     const fetchMobileNo = await db.executeQuery(`select otp, mobile_no from users where cnic = ? and is_bisp_verified = ? limit 1`, [cnic, 0]);
     if (fetchMobileNo.length < 1) {
       res.status(200).send(getResponseObject('No Data Found against cnic in general subsidy', 404, 0));
     } else {
       const { otp, mobile_no } = fetchMobileNo[0];
       const stericMobileNo = "+92*****" + String(mobile_no).substring(7);
-      if (OTP == otp) {
+      if (String(OTP).trim() == String(otp).trim()) {
         await db.executeQuery(`update users set otp = ?, status = ? where cnic = ?`, [null, false, cnic]);
         res.status(200).send(getResponseObject('OTP Verified', 200, 1));
       } else {
