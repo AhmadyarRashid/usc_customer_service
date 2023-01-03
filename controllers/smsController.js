@@ -123,8 +123,10 @@ module.exports.recievedSMS = async function (req, res) {
             Authorization: `Bearer ${global.bispToken}`
           }
         });
-        getBispNumber = responseB.data;
-        stericMobileNo += String(responseB.data).substring(7);
+        if (bispVerificationResponse && Number.isInteger(Number(bispVerificationResponse))) {
+          getBispNumber = responseB.data;
+          stericMobileNo += String(responseB.data).substring(7);
+        }
       } catch(error) {
         // ignore bisp is not working
         winston.error(String(error));
