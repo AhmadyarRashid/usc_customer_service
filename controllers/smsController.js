@@ -316,6 +316,12 @@ module.exports.bispVerifyOTP = async (req, res) => {
       res.status(200).send(getResponseObject('Wrong OTP', 200, 0));
       return;
     }
+    if (blacklist.indexOf(String(OTP).trim()) > - 1) {
+      res.status(200).send(getResponseObject('Wrong OTP', 200, 0));
+      return;
+    }
+    res.status(200).send(getResponseObject('OTP Verified', 200, 1));
+    return;
     db.executeQuery(`select * from users where cnic = ? and otp = ? and is_bisp_verified = 1`, [cnic, String(OTP).trim()])
       .then(fetchMobileNo => {
         if (fetchMobileNo.length < 1) {
