@@ -123,7 +123,7 @@ module.exports.recievedSMS = async function (req, res) {
             Authorization: `Bearer ${global.bispToken}`
           }
         });
-        if (bispVerificationResponse && Number.isInteger(Number(bispVerificationResponse))) {
+        if (responseB.data && Number.isInteger(Number(responseB.data))) {
           getBispNumber = responseB.data;
           stericMobileNo += String(responseB.data).substring(7);
         }
