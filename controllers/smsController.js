@@ -316,18 +316,21 @@ module.exports.bispVerifyOTP = async (req, res) => {
       res.status(200).send(getResponseObject('Wrong OTP', 200, 0));
       return;
     }
-    const blacklist = ['1234', '12345', '123456', '7777', '1111', '11111', '2222', '22222', ''];
-    if (blacklist.indexOf(String(OTP).trim()) > - 1) {
-      res.status(200).send(getResponseObject('Wrong OTP', 200, 0));
-      return;
-    }
-    res.status(200).send(getResponseObject('OTP Verified', 200, 1));
-    return;
+    // const blacklist = ['1234', '12345', '123456', '7777', '1111', '11111', '2222', '22222', ''];
+    // if (blacklist.indexOf(String(OTP).trim()) > - 1) {
+    //   res.status(200).send(getResponseObject('Wrong OTP', 200, 0));
+    //   return;
+    // }
+    // res.status(200).send(getResponseObject('OTP Verified', 200, 1));
+    // return;
     db.executeQuery(`select * from users where cnic = ? and otp = ? and is_bisp_verified = 1`, [cnic, String(OTP).trim()])
       .then(fetchMobileNo => {
         if (fetchMobileNo.length < 1) {
           res.status(200).send(getResponseObject('Wrong OTP', 200, 0));
         } else {
+          winston.info(`BISP Verify OTP Verified ===== ${cnic} and ${OTP}`);
+          res.status(200).send(getResponseObject('OTP Verified', 200, 1));
+          return;
           // res.status(200).send(getResponseObject('OTP Verified', 200, 1));
           // return;
           const { id } = fetchMobileNo[0];
@@ -362,7 +365,8 @@ module.exports.bispVerifyOTP = async (req, res) => {
       })
       .catch(error => {
         winston.error(`BISP Verify OTP Failed ===== ${cnic} and ${OTP}, error ${error}`);
-        res.status(500).send(getResponseObject("Something went wrong.", 500, 0));
+        res.status(200).send(getResponseObject('Wrong OTP', 200, 0));
+        // res.status(500).send(getResponseObject("Something went wrong.", 500, 0));
       });
   // } catch (error) {
   //   winston.error(`Verify OTP:  Payload ${JSON.stringify(req.body)} and its error ${error}`);
