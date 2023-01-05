@@ -13,7 +13,7 @@ var ntcToken = '';
 var isLocked = true;
 
 const sendMessage = (to, message, callback = () => null) => {
-  // winston.info('ready to hit Send Message API');
+  winston.info(`ready send Message API: ${to}`);
   const instance = axios.create({
     httpsAgent: new https.Agent({
       rejectUnauthorized: false
@@ -35,19 +35,21 @@ const sendMessage = (to, message, callback = () => null) => {
       const parseResponse = response.data;
       // winston.info(`Send SMS Response : ${JSON.stringify(parseResponse)}`);
       if (parseResponse['rescode'] === 0 && parseResponse['message'] == 'Session expired') {
-        winston.error(`Send Message Session Expired : ${JSON.stringify(parseResponse)}`);
+        winston.error(`send Message API: ${to} Session Expired and error ${JSON.stringify(parseResponse)}`);
+        // winston.error(`Send Message Session Expired : ${JSON.stringify(parseResponse)}`);
         callback(null, true);
         // loginNTC12(() => {
         //   sendMessage(to, message);
         //   // callback(null, true);
         // })
       } else {
+        winston.info(`Success send Message API: ${to}`);
         callback(null, true);
       }
     })
     .catch(error => {
       callback('Something went wrong', null);
-      winston.error(`send Message =: ${to} api error: ${error}`);
+      winston.error(`Failed send Message API: ${to} and its error: ${error}`);
     })
 };
 
