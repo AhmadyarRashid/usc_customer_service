@@ -47,7 +47,7 @@ const sendMessage = (to, message, callback = () => null) => {
     })
     .catch(error => {
       callback('Something went wrong', null);
-      winston.error(`send Message api error: ${error}`);
+      winston.error(`send Message =: ${to} api error: ${error}`);
     })
 };
 
