@@ -325,7 +325,7 @@ module.exports.bispVerifyOTP = async (req, res) => {
       res.status(200).send(getResponseObject('Wrong OTP', 200, 0));
       return;
     }
-    const blacklist = ['1234', '12345', '123456', '7777', '1111', '11111', '2222', '22222', ''];
+    const blacklist = ['1234', '12345', '123456', '7777', '1111', '11111', '2222', '22222', '8899', ''];
     if (blacklist.indexOf(String(OTP).trim()) > - 1) {
       res.status(200).send(getResponseObject('Wrong OTP', 200, 0));
       return;
