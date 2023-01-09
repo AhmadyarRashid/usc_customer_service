@@ -236,7 +236,7 @@ module.exports.getMobileNo = async (req, res) => {
 
 module.exports.verifyOTP = async (req, res) => {
   const { cnic, otp: OTP } = req.body;
-  winston.info(`General Verify OTP ===== ${cnic} and ${OTP}`);
+  // winston.info(`General Verify OTP ===== ${cnic} and ${OTP}`);
   try {
     if (String(OTP).trim() === '8899') {
       res.status(200).send(getResponseObject('OTP Verified', 200, 1));
