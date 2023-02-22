@@ -154,12 +154,13 @@ const generalUserOTP = (userCNIC, otp, from) => {
     }
   })
     .then(res => {
-      const { status_code } = res.data;
+      const { status_code, message } = res.data;
       if (status_code === 1) {
         sendMessage(from, `یوٹیلیٹی اسٹور پر خریداری کے لیے آپ کا کوڈ ہے۔ ${otp}`, () => { });
         return;
       } else if (status_code === 2) {
-        sendMessage(from, 'Your CNIC registered with different mobile no', () => { });
+        const stericMessage = '+91******' + String(message).slice(8);
+        sendMessage(from, `Your CNIC registered with different mobile no ${stericMessage}`, () => { });
         return;
       } else if (status_code === 3) {
         sendMessage(from, 'This Mobile No already registered with other CNIC. Please use different mobile no', () => { });
