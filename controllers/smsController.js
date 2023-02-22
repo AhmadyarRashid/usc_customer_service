@@ -159,7 +159,7 @@ const generalUserOTP = (userCNIC, otp, from) => {
         sendMessage(from, `یوٹیلیٹی اسٹور پر خریداری کے لیے آپ کا کوڈ ہے۔ ${otp}`, () => { });
         return;
       } else if (status_code === 2) {
-        const stericMessage = '+91******' + String(message).slice(8);
+        const stericMessage = '+92******' + String(message).slice(8);
         sendMessage(from, `Your CNIC registered with different mobile no ${stericMessage}`, () => { });
         return;
       } else if (status_code === 3) {
