@@ -176,10 +176,12 @@ const generalUserOTP = (userCNIC, otp, from) => {
 
 module.exports.recievedSMS = async function (req, res) {
   winston.info(`Receive NTC SMS Request Body: ${JSON.stringify(req.body)}`);
+
   const { from, text } = req.body;
   let getBispNumber = '';
   let stericMobileNo = "+92*****";
   res.status(200).send({ "rescode": 1, "message": "Success" });
+  return;
   try {
     // text contains number and its length must be 13
     const userCNIC = parseInt(text);
@@ -196,21 +198,25 @@ module.exports.recievedSMS = async function (req, res) {
           // if user is bisp verified
           getBispNumber = responseB.data;
           stericMobileNo += String(responseB.data).substring(7);
-          bispUserOTP(getBispNumber, stericMobileNo, userCNIC, otp, from);
+          // NEED TO UNDO LATER ON
+          // bispUserOTP(getBispNumber, stericMobileNo, userCNIC, otp, from);
           
         } else {
           // For general user
-          generalUserOTP(userCNIC, otp, from);
+          // NEED TO UNDO LATER ON
+          // generalUserOTP(userCNIC, otp, from);
         }
       }).catch(error => {
         // ignore bisp is not working
         winston.error(String(error));
         // For general user
-        generalUserOTP(userCNIC, otp, from);
+        // NEED TO UNDO LATER ON
+        // generalUserOTP(userCNIC, otp, from);
       });
     } else {
       winston.info(`Send Acknowledge to NTC: ${from}, Please send valid 13 digit CNIC without dashes ${text}`);
-      sendMessage(from, 'Please send valid 13 digit CNIC without dashes', () => { });
+      // NEED TO UNDO LATER ON
+      // sendMessage(from, 'Please send valid 13 digit CNIC without dashes', () => { });
       return;
     }
   } catch (error) {
