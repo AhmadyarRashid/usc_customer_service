@@ -53,6 +53,60 @@ const sendMessage = (to, message, callback = () => null) => {
     })
 };
 
+const sendMessageFromUFone = (to, message, callback = () => null) => {
+  winston.info(`ready send Message API: ${to}`);
+  const ID = '03348960224';
+  const MESSAGE = message;
+  const MOBILE_NO = to;
+
+  axios
+    .get(`https://bsms.ufone.com/bsms_v8_api/sendapi-0.3.jsp?id=${ID}&message=${MESSAGE}&shortcode=USC&lang=English&mobilenum=${MOBILE_NO}&password=API@Usc4Isb&groupname=&messagetype=transactional`)
+    .then(response => {
+      winston.info(`Response success: ${to}`);
+    })
+    .catch(error => {
+      winston.error('===== facing issue ====', error);
+    });
+
+  // const instance = axios.create({
+  //   httpsAgent: new https.Agent({
+  //     rejectUnauthorized: false
+  //   })
+  // });
+  // instance
+  //   .post(`${constants.ntcBaseUrl}`, {
+  //     process: 'SEND_SMS',
+  //     userid: constants.ntcUserId,
+  //     token: global.ntcToken,
+  //     MSISDN: to,
+  //     from: constants.shortCode,
+  //     message,
+  //     dlr: 1
+  //   }, {
+  //     timeout: 100000
+  //   })
+  //   .then(async response => {
+  //     const parseResponse = response.data;
+  //     // winston.info(`Send SMS Response : ${JSON.stringify(parseResponse)}`);
+  //     if (parseResponse['rescode'] === 0 && parseResponse['message'] == 'Session expired') {
+  //       winston.error(`send Message API: ${to} Session Expired and error ${JSON.stringify(parseResponse)}`);
+  //       // winston.error(`Send Message Session Expired : ${JSON.stringify(parseResponse)}`);
+  //       callback(null, true);
+  //       // loginNTC12(() => {
+  //       //   sendMessage(to, message);
+  //       //   // callback(null, true);
+  //       // })
+  //     } else {
+  //       winston.info(`Success send Message API: ${to}`);
+  //       callback(null, true);
+  //     }
+  //   })
+  //   .catch(error => {
+  //     callback('Something went wrong', null);
+  //     winston.error(`Failed send Message API: ${to} and its error: ${error}`);
+  //   })
+};
+
 // controllers
 module.exports.loginNTC = (req, res) => {
   winston.info('loginNTC');
@@ -120,25 +174,25 @@ const bispUserOTP = (getBispNumber, stericMobileNo, userCNIC, otp, from) => {
       const { status_code } = res.data;
       if (status_code === 1) {
         if (String(getBispNumber) === String(from)) {
-          sendMessage(from, `یوٹیلیٹی اسٹور پر خریداری کے لیے آپ کا (بی آئی ایس پی) کوڈ ہے ${otp}`, () => { });
+          sendMessageFromUFone(from, `یوٹیلیٹی اسٹور پر خریداری کے لیے آپ کا (بی آئی ایس پی) کوڈ ہے ${otp}`, () => { });
           return;
         } else {
-          sendMessage(getBispNumber, `یوٹیلیٹی اسٹور پر خریداری کے لیے آپ کا (بی آئی ایس پی) کوڈ ہے ${otp}`, () => { });
-          sendMessage(from, `آپ کا (بی آئی ایس پی) کوڈ آپ کے رجسٹرڈ موبائل نمبر پر بھیجا گیا ہے۔ ${stericMobileNo}`, () => { });
+          sendMessageFromUFone(getBispNumber, `یوٹیلیٹی اسٹور پر خریداری کے لیے آپ کا (بی آئی ایس پی) کوڈ ہے ${otp}`, () => { });
+          sendMessageFromUFone(from, `آپ کا (بی آئی ایس پی) کوڈ آپ کے رجسٹرڈ موبائل نمبر پر بھیجا گیا ہے۔ ${stericMobileNo}`, () => { });
           return;
         }
       } else if (status_code === 2) {
-        sendMessage(from, 'Your CNIC registered with different mobile no', () => { });
+        sendMessageFromUFone(from, 'Your CNIC registered with different mobile no', () => { });
         return;
       } else if (status_code === 3) {
-        sendMessage(from, 'This Mobile No already registered with other CNIC. Please use different mobile no', () => { });
+        sendMessageFromUFone(from, 'This Mobile No already registered with other CNIC. Please use different mobile no', () => { });
         return;
       }
 
     })
     .catch(error => {
       winston.error(String(error));
-      sendMessage(from, 'OTP service is unavailable. Please try again later.', () => { });
+      sendMessageFromUFone(from, 'OTP service is unavailable. Please try again later.', () => { });
     })
 };
 
@@ -174,6 +228,7 @@ const generalUserOTP = (userCNIC, otp, from) => {
     })
 }
 
+
 module.exports.recievedSMS = async function (req, res) {
   winston.info(`Receive NTC SMS Request Body: ${JSON.stringify(req.body)}`);
 
@@ -181,7 +236,21 @@ module.exports.recievedSMS = async function (req, res) {
   let getBispNumber = '';
   let stericMobileNo = "+92*****";
   res.status(200).send({ "rescode": 1, "message": "Success" });
+  try {
+    const userCNIC = parseInt(text);
+    if (userCNIC && userCNIC.toString().length == 13) {
+      const otp = Math.floor(Math.random() * 90000) + 10000;
+      stericMobileNo += String(from).substring(7);
+      bispUserOTP(from, stericMobileNo, userCNIC, otp, from);
+    } else {
+      sendMessageFromUFone(from, 'Please send valid 13 digit CNIC without dashes', () => { });
+    }
+  } catch(err) {
+    winston.error(String(err));
+  }
+
   return;
+
   try {
     // text contains number and its length must be 13
     const userCNIC = parseInt(text);
