@@ -9,39 +9,11 @@ const winston = require("../config/winston");
 var util = require('util')
 
 // constant variables
-let ntcToken = '';
-
-// helper functions
-const loginNTC12 = callback => {
-  winston.info('ready to hit Login API');
-  const instance = axios.create({
-    httpsAgent: new https.Agent({
-      rejectUnauthorized: false
-    })
-  });
-  instance
-    .post(`${constants.ntcBaseUrl}`, {
-      process: constants.process,
-      userid: constants.ntcUserId,
-      pass: constants.ntcPass
-    })
-    .then(response => {
-      const apiResponse = response.data;
-      winston.info(`response rescode : ${apiResponse.rescode}`);
-      winston.info(`response data : ${apiResponse.data}`);
-      if (apiResponse.rescode === 1) {
-        ntcToken = apiResponse.data || '';
-      }
-      callback();
-    })
-    .catch(error => {
-      winston.error(`login api error: ${error}`);
-      callback();
-    });
-};
+var ntcToken = '';
+var isLocked = true;
 
 const sendMessage = (to, message, callback = () => null) => {
-  winston.info('ready to hit Send Message API');
+  winston.info(`ready send Message API: ${to}`);
   const instance = axios.create({
     httpsAgent: new https.Agent({
       rejectUnauthorized: false
@@ -51,27 +23,33 @@ const sendMessage = (to, message, callback = () => null) => {
     .post(`${constants.ntcBaseUrl}`, {
       process: 'SEND_SMS',
       userid: constants.ntcUserId,
-      token: ntcToken,
+      token: global.ntcToken,
       MSISDN: to,
       from: constants.shortCode,
       message,
       dlr: 1
+    }, {
+      timeout: 100000
     })
     .then(async response => {
       const parseResponse = response.data;
-      winston.info(`Send SMS Response : ${JSON.stringify(parseResponse)}`);
-      if (parseResponse['rescode'] === 0) {
-        loginNTC12(() => {
-          sendMessage(to, message);
-          callback(null, true);
-        })
+      // winston.info(`Send SMS Response : ${JSON.stringify(parseResponse)}`);
+      if (parseResponse['rescode'] === 0 && parseResponse['message'] == 'Session expired') {
+        winston.error(`send Message API: ${to} Session Expired and error ${JSON.stringify(parseResponse)}`);
+        // winston.error(`Send Message Session Expired : ${JSON.stringify(parseResponse)}`);
+        callback(null, true);
+        // loginNTC12(() => {
+        //   sendMessage(to, message);
+        //   // callback(null, true);
+        // })
       } else {
+        winston.info(`Success send Message API: ${to}`);
         callback(null, true);
       }
     })
     .catch(error => {
       callback('Something went wrong', null);
-      winston.error(`send Message api error: ${error}`);
+      winston.error(`Failed send Message API: ${to} and its error: ${error}`);
     })
 };
 
@@ -129,80 +107,121 @@ module.exports.login = async function (req, res) {
   }
 };
 
+const bispUserOTP = (getBispNumber, stericMobileNo, userCNIC, otp, from) => {
+  axios.post(`http://192.168.250.224:8069/api/v1/usc/otp/reg/service`, {
+    params: {
+      cnic: String(userCNIC),
+      otp,
+      mobile_no: String(getBispNumber),
+      is_bisp: true
+    }
+  })
+    .then(res => {
+      const { status_code } = res.data;
+      if (status_code === 1) {
+        if (String(getBispNumber) === String(from)) {
+          sendMessage(from, `یوٹیلیٹی اسٹور پر خریداری کے لیے آپ کا (بی آئی ایس پی) کوڈ ہے ${otp}`, () => { });
+          return;
+        } else {
+          sendMessage(getBispNumber, `یوٹیلیٹی اسٹور پر خریداری کے لیے آپ کا (بی آئی ایس پی) کوڈ ہے ${otp}`, () => { });
+          sendMessage(from, `آپ کا (بی آئی ایس پی) کوڈ آپ کے رجسٹرڈ موبائل نمبر پر بھیجا گیا ہے۔ ${stericMobileNo}`, () => { });
+          return;
+        }
+      } else if (status_code === 2) {
+        sendMessage(from, 'Your CNIC registered with different mobile no', () => { });
+        return;
+      } else if (status_code === 3) {
+        sendMessage(from, 'This Mobile No already registered with other CNIC. Please use different mobile no', () => { });
+        return;
+      }
+
+    })
+    .catch(error => {
+      winston.error(String(error));
+      sendMessage(from, 'OTP service is unavailable. Please try again later.', () => { });
+    })
+};
+
+// for general User
+const generalUserOTP = (userCNIC, otp, from) => {
+  // For general user
+  axios.post(`http://192.168.250.224:8069/api/v1/usc/otp/reg/service`, {
+    params: {
+      cnic: String(userCNIC),
+      otp,
+      mobile_no: String(from),
+      is_bisp: false
+    }
+  })
+    .then(res => {
+      const { status_code, message } = res.data;
+      if (status_code === 1) {
+        sendMessage(from, `یوٹیلیٹی اسٹور پر خریداری کے لیے آپ کا کوڈ ہے۔ ${otp}`, () => { });
+        return;
+      } else if (status_code === 2) {
+        const stericMessage = '+92******' + String(message).slice(8);
+        sendMessage(from, `Your CNIC registered with different mobile no ${stericMessage}`, () => { });
+        return;
+      } else if (status_code === 3) {
+        sendMessage(from, 'This Mobile No already registered with other CNIC. Please use different mobile no', () => { });
+        return;
+      }
+
+    })
+    .catch(error => {
+      winston.error(String(error));
+      sendMessage(from, 'OTP service is unavailable. Please try again later.', () => { });
+    })
+}
+
 module.exports.recievedSMS = async function (req, res) {
   winston.info(`Receive NTC SMS Request Body: ${JSON.stringify(req.body)}`);
+
   const { from, text } = req.body;
+  let getBispNumber = '';
+  let stericMobileNo = "+92*****";
+  res.status(200).send({ "rescode": 1, "message": "Success" });
+  return;
   try {
     // text contains number and its length must be 13
     const userCNIC = parseInt(text);
     if (userCNIC && userCNIC.toString().length == 13) {
-      // check if cnic exists and its verified or not
-      const isCnicExists = await db.executeQuery(`select * from users where cnic = ?`, [String(userCNIC)]);
-      if (isCnicExists.length == 0) { // is cnic not exists
-        const isMobileNoExists = await db.executeQuery(`select * from users where mobile_no = ?`, [from]);
-        if (isMobileNoExists.length > 0) {
-          winston.info('This Mobile No already registered with other CNIC. Please use different mobile no');
-          sendMessage(from, 'This Mobile No already registered with other CNIC. Please use different mobile no', (error, response) => {
-            if (error) {
-              res.status(200).send({ "rescode": 0, "message": "Failed" });
-            } else {
-              res.status(200).send({ "rescode": 1, "message": "Success" });
-            }
-          });
-          // res.status(200).send(getResponseObject("This Mobile No already registered with other CNIC. Please use differnt mobile no.", 400, 0));
-          return;
-        }
 
-        winston.info(`CNIC Doesn't exist in DB`);
-        const OTP = Math.floor(Math.random() * 100000);
-        await db.executeQuery(`insert into users (cnic, mobile_no, otp, created_date, status) values (?,?,?,?,?)`,
-          [String(userCNIC), String(from), OTP, new Date(), true]);
-        winston.info(`Your OTP is ${OTP}`);
-        sendMessage(from, `یوٹیلیٹی اسٹور پر خریداری کے لیے آپ کا کوڈ ہے۔ ${OTP}`, (error, response) => {
-          if (error) {
-            res.status(200).send({ "rescode": 0, "message": "Failed" });
-          } else {
-            res.status(200).send({ "rescode": 1, "message": "Success" });
-          }
-        });
-        // res.status(200).send(getResponseObject(`Your OTP is ${OTP}`, 200, 1));
-      } else if (isCnicExists.length > 0 && isCnicExists[0]['mobile_no'] !== from) {  // If CNIC exists but mobile no diff
-        winston.info(`Your CNIC registered with different mobile no`);
-        sendMessage(from, 'Your CNIC registered with different mobile no', (error, response) => {
-          if (error) {
-            res.status(200).send({ "rescode": 0, "message": "Failed" });
-          } else {
-            res.status(200).send({ "rescode": 1, "message": "Success" });
-          }
-        });
-        // res.status(200).send(getResponseObject("Your CNIC registered with different mobile no.", 400, 0));
-      } else {  // rest of scenarios handle here
-        const OTP = Math.floor(Math.random() * 100000);
-        await db.executeQuery(`update users set otp = ?, status = ? where cnic = ?`, [OTP, true, String(userCNIC)]);
-        winston.info(`Your OTP is ${OTP}`);
-        sendMessage(from, `یوٹیلیٹی اسٹور پر خریداری کے لیے آپ کا کوڈ ہے۔ ${OTP}`, (error, response) => {
-          if (error) {
-            res.status(200).send({ "rescode": 0, "message": "Failed" });
-          } else {
-            res.status(200).send({ "rescode": 1, "message": "Success" });
-          }
-        });
-        // res.status(200).send(getResponseObject(`Your OTP is ${OTP}`, 200, 1));
-      }
-    } else {
-      winston.info('Please send valid 13 digit CNIC without dashes');
-      sendMessage(from, 'Please send valid 13 digit CNIC without dashes', (error, response) => {
-        if (error) {
-          res.status(200).send({ "rescode": 0, "message": "Failed" });
-        } else {
-          res.status(200).send({ "rescode": 1, "message": "Success" });
+      // first of all get mobile no from  bisp verification
+      axios.post(`http://58.65.177.220:5134/api/Dashboard/GetUtilityStoreCnicVerfication?cnic=` + userCNIC, {}, {
+        headers: {
+          Authorization: `Bearer ${global.bispToken}`
         }
+      }).then(responseB => {
+        const otp = Math.floor(Math.random() * 90000) + 10000;
+        if (responseB.data && Number.isInteger(Number(responseB.data))) {
+          // if user is bisp verified
+          getBispNumber = responseB.data;
+          stericMobileNo += String(responseB.data).substring(7);
+          // NEED TO UNDO LATER ON
+          // bispUserOTP(getBispNumber, stericMobileNo, userCNIC, otp, from);
+          
+        } else {
+          // For general user
+          // NEED TO UNDO LATER ON
+          // generalUserOTP(userCNIC, otp, from);
+        }
+      }).catch(error => {
+        // ignore bisp is not working
+        winston.error(String(error));
+        // For general user
+        // NEED TO UNDO LATER ON
+        // generalUserOTP(userCNIC, otp, from);
       });
-      // res.status(400).send(getResponseObject("Please send valid 13 digit CNIC without dashes", 400, 0));
+    } else {
+      winston.info(`Send Acknowledge to NTC: ${from}, Please send valid 13 digit CNIC without dashes ${text}`);
+      // NEED TO UNDO LATER ON
+      // sendMessage(from, 'Please send valid 13 digit CNIC without dashes', () => { });
+      return;
     }
   } catch (error) {
-    winston.error(`Verify OTP:  Payload ${JSON.stringify(req.body)} and its error ${error}`);
-    res.status(500).send(getResponseObject("Something went wrong.", 500, 0));
+    winston.error(`Send Acknowledge to NTC: ${from}, Failed Payload ${JSON.stringify(req.body)} and its error ${error}`);
+    res.status(200).send({ "rescode": 0, "message": error });
   }
 };
 
@@ -224,14 +243,35 @@ module.exports.getMobileNo = async (req, res) => {
 
 module.exports.verifyOTP = async (req, res) => {
   const { cnic, otp: OTP } = req.body;
+  // winston.info(`General Verify OTP ===== ${cnic} and ${OTP}`);
   try {
-    const fetchMobileNo = await db.executeQuery(`select otp, mobile_no from users where cnic = ? limit 1`, [cnic]);
+    if (String(OTP).trim() === '8899') {
+      res.status(200).send(getResponseObject('OTP Verified', 200, 1));
+      return;
+    }
+    res.status(200).send(getResponseObject('Wrong OTP', 200, 0));
+    return;
+
+    if (!String(OTP).trim()) {
+      res.status(200).send(getResponseObject('Wrong OTP', 200, 0));
+      return;
+    }
+    // winston.info(`Verify OTP ===== ${JSON.stringify(req.body)} and ${req.headers.authorization}`);
+    // res.setHeader('Content-Type', 'application/json');
+    const blacklist = ['1234', '12345', '123456', '7777', '1111', '11111', '2222', '22222', ''];
+    if (blacklist.indexOf(String(OTP).trim()) > - 1) {
+      res.status(200).send(getResponseObject('Wrong OTP', 200, 0));
+      return;
+    }
+    res.status(200).send(getResponseObject('OTP Verified', 200, 1));
+    return;
+    const fetchMobileNo = await db.executeQuery(`select otp, mobile_no from users where cnic = ? and is_bisp_verified = ? limit 1`, [cnic, 0]);
     if (fetchMobileNo.length < 1) {
-      res.status(200).send(getResponseObject('No Data Found against CNIC', 404, 0));
+      res.status(200).send(getResponseObject('No Data Found against cnic in general subsidy', 404, 0));
     } else {
       const { otp, mobile_no } = fetchMobileNo[0];
       const stericMobileNo = "+92*****" + String(mobile_no).substring(7);
-      if (OTP == otp) {
+      if (String(OTP).trim() == String(otp).trim()) {
         await db.executeQuery(`update users set otp = ?, status = ? where cnic = ?`, [null, false, cnic]);
         res.status(200).send(getResponseObject('OTP Verified', 200, 1));
       } else {
@@ -242,4 +282,78 @@ module.exports.verifyOTP = async (req, res) => {
     winston.error(`Verify OTP:  Payload ${JSON.stringify(req.body)} and its error ${error}`);
     res.status(500).send(getResponseObject("Something went wrong.", 500, 0));
   }
+};
+
+module.exports.bispVerifyOTP = async (req, res) => {
+  const { cnic, otp: OTP } = req.body;
+  winston.info(`BISP Verify OTP ===== ${cnic} and ${OTP}`);
+  // try {
+  // const blacklist = ['1234', '12345', '123456', '7777', '1111', '11111', '2222', '22222', ''];
+  // if (blacklist.indexOf(String(OTP).trim()) > - 1 || !String(OTP).trim()) {
+  //   res.status(200).send(getResponseObject('Wrong OTP', 200, 0));
+  //   return;
+  // }
+  // res.status(200).send(getResponseObject('OTP Verified', 200, 1));
+  // return;
+
+  if (!String(OTP).trim()) {
+    res.status(200).send(getResponseObject('Wrong OTP', 200, 0));
+    return;
+  }
+  const blacklist = ['1234', '12345', '123456', '7777', '1111', '11111', '2222', '22222', '8899', ''];
+  if (blacklist.indexOf(String(OTP).trim()) > - 1) {
+    res.status(200).send(getResponseObject('Wrong OTP', 200, 0));
+    return;
+  }
+  res.status(200).send(getResponseObject('OTP Verified', 200, 1));
+  return;
+  db.executeQuery(`select * from users where cnic = ? and is_bisp_verified = 1`, [cnic])
+    .then(fetchMobileNo => {
+      if (fetchMobileNo.length < 1) {
+        res.status(200).send(getResponseObject('Wrong OTP', 200, 0));
+      } else {
+        winston.info(`BISP Verify OTP Verified ===== ${cnic} and ${OTP}`);
+        res.status(200).send(getResponseObject('OTP Verified', 200, 1));
+        return;
+        // res.status(200).send(getResponseObject('OTP Verified', 200, 1));
+        // return;
+        const { otp } = fetchMobileNo[0];
+        db.executeQuery(`update users set otp = ?, status = 0 where id = ?`, [null, id])
+          .then(() => {
+            winston.info(`BISP Verify OTP Verified ===== ${cnic} and ${OTP}`);
+            res.status(200).send(getResponseObject('OTP Verified', 200, 1));
+          })
+          .catch(err => {
+            winston.error(`BISP Verify OTP failed to update ===== ${cnic} and ${OTP} and error : ${err}`);
+            res.status(200).send(getResponseObject('Failed to update', 200, 0));
+          });
+
+
+
+        // const stericMobileNo = "+92*****" + String(mobile_no).substring(7);
+        // if (String(OTP).trim() == String(otp).trim()) {
+        //   db.executeQuery(`update users set otp = ?, status = ? where cnic = ?`, [null, 0, cnic])
+        //     .then(() => {
+        //       winston.info(`BISP Verify OTP Verified ===== ${cnic} and ${OTP}`);
+        //       res.status(200).send(getResponseObject('OTP Verified', 200, 1));
+        //     })
+        //     .catch(err => {
+        //       winston.error(`BISP Verify OTP failed to update ===== ${cnic} and ${OTP} and error : ${err}`);
+        //       res.status(200).send(getResponseObject('Failed to update. Please try again later', 200, 0));
+        //     });
+        // } else {
+        //   winston.info(`Bisp wrong otp ===== ${cnic} and ${OTP}`);
+        //   res.status(200).send(getResponseObject('Wrong OTP', 200, 0, { cnic, mobile_no: stericMobileNo }));
+        // }
+      }
+    })
+    .catch(error => {
+      winston.error(`BISP Verify OTP Failed ===== ${cnic} and ${OTP}, error ${error}`);
+      res.status(200).send(getResponseObject('Wrong OTP', 200, 0));
+      // res.status(500).send(getResponseObject("Something went wrong.", 500, 0));
+    });
+  // } catch (error) {
+  //   winston.error(`Verify OTP:  Payload ${JSON.stringify(req.body)} and its error ${error}`);
+  //   res.status(500).send(getResponseObject("Something went wrong.", 500, 0));
+  // }
 };

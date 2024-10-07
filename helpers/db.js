@@ -3,12 +3,12 @@ const config = require("../config/config");
 
 // create db pool based on config
 const pool = mysql.createPool({
-  connectionLimit: config.db_poolsize,
+  connectionLimit: 10,
   host: config.db_host,
   port: config.db_port,
   user: config.db_user,
   password: config.db_pass,
-  database: config.db_name
+  database: config.db_name 
 });
 
 // return promise with connection from db pool
