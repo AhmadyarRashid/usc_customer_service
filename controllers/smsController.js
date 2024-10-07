@@ -56,11 +56,12 @@ const sendMessage = (to, message, callback = () => null) => {
 const sendMessageFromUFone = (to, message, callback = () => null) => {
   winston.info(`ready send Message API: ${to}`);
   const ID = '03348960224';
-  const MESSAGE = message;
+  const MESSAGE = encodeURIComponent(message);
   const MOBILE_NO = to;
-
+  const URL = `https://bsms.ufone.com/bsms_v8_api/sendapi-0.3.jsp?id=${ID}&message=${MESSAGE}&shortcode=USC&lang=English&mobilenum=${MOBILE_NO}&password=API@Usc4Isb&groupname=&messagetype=transactional`;
+  // console.log('URL:', URL);
   axios
-    .get(`https://bsms.ufone.com/bsms_v8_api/sendapi-0.3.jsp?id=${ID}&message=${MESSAGE}&shortcode=USC&lang=English&mobilenum=${MOBILE_NO}&password=API@Usc4Isb&groupname=&messagetype=transactional`)
+    .get(URL)
     .then(response => {
       winston.info(`Response success: ${to}`);
     })
