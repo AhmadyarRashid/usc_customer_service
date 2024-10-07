@@ -6,14 +6,21 @@ const router = express.Router();
 
 // routes
 router.get(
-    "/:cnic",
-    verifyToken,
+    "/bisp/:cnic",
     quotaController.get_user_quota
 );
 router.post(
-    "/:cnic",
-    verifyToken,
+    "/bisp/:cnic",
     quotaController.update_user_quota
+);
+
+router.get(
+    "/general/:cnic",
+    quotaController.get_user_general_quota
+);
+router.post(
+    "/general/:cnic",
+    quotaController.update_user_general_quota
 );
 
 router.post(
