@@ -175,7 +175,8 @@ const bispUserOTP = (getBispNumber, stericMobileNo, userCNIC, otp, from) => {
       const { status_code } = res.data;
       if (status_code === 1) {
         if (String(getBispNumber) === String(from)) {
-          sendMessageFromUFone(from, `یوٹیلیٹی اسٹور پر خریداری کے لیے آپ کا (بی آئی ایس پی) کوڈ ہے ${otp}`, () => { });
+          sendMessageFromUFone(from, `یوٹیلیٹی اسٹور پر خریداری کے لیے آپ کا کوڈ ہے ${otp}`, () => { });
+          // sendMessageFromUFone(from, `یوٹیلیٹی اسٹور پر خریداری کے لیے آپ کا (بی آئی ایس پی) کوڈ ہے ${otp}`, () => { });
           return;
         } else {
           sendMessageFromUFone(getBispNumber, `یوٹیلیٹی اسٹور پر خریداری کے لیے آپ کا (بی آئی ایس پی) کوڈ ہے ${otp}`, () => { });
